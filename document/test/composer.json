@@ -1,0 +1,15 @@
+{
+    "name": "administrator/test",
+    "authors": [
+        {
+            "name": "jackchensm",
+            "email": "1655664358@qq.com"
+        }
+    ],
+    "require": {},
+    "scripts": {
+        "pre-status-cmd": [
+            "T\\Test:show"
+        ]
+    }
+}
