@@ -52,9 +52,9 @@ class PackageManifest
      */
     public function __construct(Filesystem $files, $basePath, $manifestPath)
     {
-        $this->files = $files;
-        $this->basePath = $basePath;
-        $this->manifestPath = $manifestPath;
+        $this->files = $files;//文件对象
+        $this->basePath = $basePath;//框架路径
+        $this->manifestPath = $manifestPath;//bootstarp/cache/packages.php文件
         $this->vendorPath = $basePath.'/vendor';
     }
 

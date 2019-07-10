@@ -5,7 +5,7 @@
 ## Laravel reading
 
 - **[安装框架说明](document/crud.md)**
-- **[crud流程](document/web.md)**
+- **[入口文件](document/web.md)**
 
 
 

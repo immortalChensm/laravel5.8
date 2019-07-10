@@ -11,6 +11,7 @@ class TestController extends Controller
     //
     function index()
     {
-        return DB::table("test")->get();
+        $data = DB::table("test")->get();
+        return view("admin.index",compact('data'));
     }
 }
