@@ -17,5 +17,6 @@ require_once '../vendor/autoload.php';
 //echo !is_null(null);
 //echo Illuminate\Contracts\Http\Kernel::class== App\Http\Kernel::class;
 $a = 1;
-print_r(compact('a','shared'));
+
+echo preg_replace('/[^[:alnum:]]/', '', "china23443");
 
