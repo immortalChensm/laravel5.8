@@ -748,12 +748,15 @@ class Kernel extends HttpKernel
         {
         //$this->config['app.providers'] 得到配置文件的服务提供类数组
             $providers = Collection::make($this->config['app.providers'])
-                            ->partition(function ($provider) {
+                            ->partition(function ($provider) {//数组分App和Illuminate类服务提供类数组
+                            //判断$provider类名前面是否是Illuminate开头的
                                 return Str::startsWith($provider, 'Illuminate\\');
                             });
-    
+            //配置文件的服务提供类与第三方服务提供类合并【第三方主要是专门为laravel开发扩展包的老司机们】  
             $providers->splice(1, 0, [$this->make(PackageManifest::class)->providers()]);
-    
+            //Application,文件对象，bootstarp/cache/services.php文件
+            //$providers->collapse() 将多维数组转换为一维【具体我不看了，LTS 5.5版本分析过】 
+            //->toArray() 搞成数组
             (new ProviderRepository($this, new Filesystem, $this->getCachedServicesPath()))
                         ->load($providers->collapse()->toArray());
         }
@@ -791,4 +794,320 @@ class Kernel extends HttpKernel
     
             return (array) $items;
         }
+    ```  
+    ```php  
+    Collection->partition($key, $operator = null, $value = null)
+                    {
+                        $partitions = [new static, new static];
+                
+                        $callback = func_num_args() === 1
+                                ? $this->valueRetriever($key)//判断是否是匿名函数
+                                : $this->operatorForWhere(...func_get_args());
+                
+                        foreach ($this->items as $key => $item) {
+                        //这里主要是区分服务提供类分别是Illuminate和App开头的【你最好看去看config/app.php的服务提供类数组,ok?】
+                        //$partitions[0][]=Illuminate\\XXX
+                        //$partitions[1][]=App\\XXX
+                            $partitions[(int) ! $callback($item, $key)][$key] = $item;
+                        }
+                        //分好后在封装返回【真是套路多】  
+                        return new static($partitions);
+                    }
+    ```  
+    
+    Collection->valueRetriever()匿名函数判断   
+    ```php  
+      protected function valueRetriever($value)
+        {
+        /**
+        protected function useAsCallable($value)
+            {
+                return ! is_string($value) && is_callable($value);
+            }
+        **/
+            if ($this->useAsCallable($value)) {
+                return $value;
+            }
+    
+            return function ($item) use ($value) {
+                return data_get($item, $value);
+            };
+        }
     ```
+    Str->startWith()判断数据是否含有指定的前缀字符
+    ```php  
+    public static function startsWith($haystack, $needles)
+        {
+            foreach ((array) $needles as $needle) {
+                if ($needle !== '' && substr($haystack, 0, strlen($needle)) === (string) $needle) {
+                    return true;
+                }
+            }
+    
+            return false;
+        }
+    ```  
+    服务提供类合并  
+    ```php  
+     public function splice($offset, $length = null, $replacement = [])
+        {
+            if (func_num_args() === 1) {
+                return new static(array_splice($this->items, $offset));
+            }
+            //https://www.php.net/manual/zh/function.array-splice.php  
+            //怎么合并的，看看手册就懂了【ok】
+            return new static(array_splice($this->items, $offset, $length, $replacement));
+        }
+    ```
+    服务仓库类  
+    ```php  
+    class ProviderRepository
+    {
+        /**
+         * The application implementation.
+         *
+         * @var \Illuminate\Contracts\Foundation\Application
+         */
+        protected $app;
+    
+        /**
+         * The filesystem instance.
+         *
+         * @var \Illuminate\Filesystem\Filesystem
+         */
+        protected $files;
+    
+        /**
+         * The path to the manifest file.
+         *
+         * @var string
+         */
+        protected $manifestPath;
+    
+        /**
+         * Create a new service repository instance.
+         *
+         * @param  \Illuminate\Contracts\Foundation\Application  $app
+         * @param  \Illuminate\Filesystem\Filesystem  $files
+         * @param  string  $manifestPath
+         * @return void
+         */
+        public function __construct(ApplicationContract $app, Filesystem $files, $manifestPath)
+        {
+            $this->app = $app;
+            $this->files = $files;
+            $this->manifestPath = $manifestPath;
+        }
+    ```
+    服务仓库类加载服务提供类【数组】  
+    Illuminate\Foundation\ProviderRepository->load()       
+    0、服务提供类合并【config/app.php+bootstrap/cache/packages.php的服务提供类】 
+    1、服务提供类更新【检测是否安装了新的扩展包--针对laravel的扩展包】  
+    2、给服务提供类注册事件【事件调度时激活运行】  
+    3、eager类的服务提供类则直接运行其register方法  
+    4、延时的服务提供类则保存 
+    ```php  
+    public function load(array $providers)
+        {
+        //加载bootstrap/cache/services.php数组构成
+        //['when',服务提供类数组]
+            $manifest = $this->loadManifest();
+            //是否要更新
+            if ($this->shouldRecompile($manifest, $providers)) {
+            //服务提供类分类【deferred,when,eager】并保存在bootstrap/cache/services.php
+                $manifest = $this->compileManifest($providers);
+            }
+            //给服务提供类注册事件监听器
+            foreach ($manifest['when'] as $provider => $events) {
+                $this->registerLoadEvents($provider, $events);
+            }
+            //运行服务提供类的注册方法
+            foreach ($manifest['eager'] as $provider) {
+            //前面说过了哦
+                $this->app->register($provider);
+            }
+            //延时加载的服务提供类
+            /***
+            public function addDeferredServices(array $services)
+                {
+                    $this->deferredServices = array_merge($this->deferredServices, $services);
+                }
+            **/
+            $this->app->addDeferredServices($manifest['deferred']);
+        }
+
+    ```  
+    加载第三方服务提供类 
+    ```php  
+    public function loadManifest()
+        {
+            if ($this->files->exists($this->manifestPath)) {
+            //返回bootstrap/cache/services.php里的服务提供类数组
+                $manifest = $this->files->getRequire($this->manifestPath);
+    
+                if ($manifest) {
+                    return array_merge(['when' => []], $manifest);
+                }
+            }
+        }
+    ```  
+    
+    检测是否要重新生成服务提供类文件  
+    ```php  
+    public function shouldRecompile($manifest, $providers)
+        {
+        //如果bootstrap/cache/serives.php不存在或是安装了新的第三方服务扩展民
+            return is_null($manifest) || $manifest['providers'] != $providers;
+        }
+    ```   
+    服务提供类分类合并并保存在bootstrap/cache/services.php  
+    分deferred,when,eager
+    ```php  
+     protected function compileManifest($providers)
+        {
+           //return ['providers' => $providers, 'eager' => [], 'deferred' => []];
+            $manifest = $this->freshManifest($providers);
+            //循环服务提供类数组
+            foreach ($providers as $provider) {
+                $instance = $this->createProvider($provider);
+                //服务提供类的成员deferred=true时
+                if ($instance->isDeferred()) {
+                //服务提供类的providers方法 
+                //比如你去看看ConsoleSupportServiceProvider这吊毛，它就是这吊样  
+                /**
+                 public function provides()
+                    {
+                        $provides = [];
+                
+                        foreach ($this->providers as $provider) {
+                        //实例化服务提供类
+                            $instance = $this->app->resolveProvider($provider);
+                            //合并服务提供类
+                            $provides = array_merge($provides, $instance->provides());
+                        }
+                
+                        return $provides;
+                    }
+                **/
+                //我们再来看
+                    foreach ($instance->provides() as $service) {
+                    //存储某个服务提供类下的服务提供类数组
+                        $manifest['deferred'][$service] = $provider;
+                    }
+    
+                    $manifest['when'][$provider] = $instance->when();
+                }
+    
+                else {
+                //及时要运行的服务提供类
+                    $manifest['eager'][] = $provider;
+                }
+            }
+            //写入bootstrap/cache/servies.php文件
+            return $this->writeManifest($manifest);
+        }
+    ```
+    服务提供类保存  
+    ```php  
+    public function writeManifest($manifest)
+        {
+            if (! is_writable(dirname($this->manifestPath))) {
+                throw new Exception('The bootstrap/cache directory must be present and writable.');
+            }
+    
+            $this->files->replace(
+                $this->manifestPath, '<?php return '.var_export($manifest, true).';'
+            );
+    
+            return array_merge(['when' => []], $manifest);
+        }
+    ```  
+    
+    给服务提供类注册一个事件【事件后面再说，先看片】  
+    ```php  
+    protected function registerLoadEvents($provider, array $events)
+        {
+            if (count($events) < 1) {
+                return;
+            }
+            //以key,value形式保存在事件数组里，value为监听器
+            $this->app->make('events')->listen($events, function () use ($provider) {
+                $this->app->register($provider);
+            });
+        }
+    ```  
+    
+    运行服务提供类的boot方法`\Illuminate\Foundation\Bootstrap\BootProviders::class,`  
+    
+    ```php  
+     public function bootstrap(Application $app)
+        {
+            $app->boot();
+        }
+    ```  
+    
+    Application->boot()   
+    ```php  
+    public function boot()
+        {
+            if ($this->booted) {
+                return;
+            }
+    
+    //运行启动回调
+            $this->fireAppCallbacks($this->bootingCallbacks);
+    
+            array_walk($this->serviceProviders, function ($p) {
+            //运行前面跑过的服务提供类【就是eager跑时，会保存在Application->serviceProviders里啦】  
+                $this->bootProvider($p);
+            });
+    
+            $this->booted = true;
+    
+            $this->fireAppCallbacks($this->bootedCallbacks);
+        }
+    ```  
+    ```php  
+    protected function fireAppCallbacks(array $callbacks)
+        {
+            foreach ($callbacks as $callback) {
+                call_user_func($callback, $this);
+            }
+        }
+    ```  
+    
+    ```php  
+    protected function bootProvider(ServiceProvider $provider)
+        {
+            if (method_exists($provider, 'boot')) {
+                return $this->call([$provider, 'boot']);
+            }
+        }
+    ```  
+    
+- 分析`(new Pipeline($this->app))`   
+    ```php  
+     return (new Pipeline($this->app))
+                        ->send($request)
+                        ->through($this->app->shouldSkipMiddleware() ? [] : $this->middleware)
+                        ->then($this->dispatchToRouter());
+    ```
+   Pipeline类  
+   ```php   
+   namespace Illuminate\Routing;
+   
+   use Closure;
+   use Exception;
+   use Throwable;
+   use Illuminate\Http\Request;
+   use Illuminate\Contracts\Debug\ExceptionHandler;
+   use Illuminate\Pipeline\Pipeline as BasePipeline;
+   use Symfony\Component\Debug\Exception\FatalThrowableError;
+   
+   /**
+    * This extended pipeline catches any exceptions that occur during each slice.
+    *
+    * The exceptions are converted to HTTP responses for proper middleware handling.
+    */
+   class Pipeline extends BasePipeline
+   ```
