@@ -16,14 +16,32 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="handle.md" pinned="false" current-in-tab="true">
+      <file leaf-file-name="handle.md" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/document/handle.md">
           <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
             <state split_layout="SPLIT">
-              <first_editor relative-caret-position="609">
-                <caret line="1109" column="63" selection-start-line="1109" selection-start-column="57" selection-end-line="1109" selection-end-column="63" />
+              <first_editor relative-caret-position="235">
+                <caret line="1160" column="58" selection-start-line="1160" selection-start-column="58" selection-end-line="1160" selection-end-column="58" />
               </first_editor>
               <second_editor />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="demo2.php" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tests/demo2.php">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="324">
+              <caret line="29" column="34" selection-start-line="29" selection-start-column="34" selection-end-line="29" selection-end-column="34" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="demo3.php" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/tests/demo3.php">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="176">
+              <caret line="13" column="28" lean-forward="true" selection-start-line="13" selection-start-column="28" selection-end-line="13" selection-end-column="28" />
             </state>
           </provider>
         </entry>
@@ -40,17 +58,17 @@
       <file leaf-file-name="Kernel.php" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="167">
-              <caret line="147" column="24" lean-forward="true" selection-start-line="147" selection-start-column="24" selection-end-line="147" selection-end-column="24" />
+            <state relative-caret-position="211">
+              <caret line="150" column="25" selection-start-line="150" selection-start-column="25" selection-end-line="150" selection-end-column="25" />
             </state>
           </provider>
         </entry>
       </file>
       <file leaf-file-name="Pipeline.php" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/vendor/laravel/framework/src/Illuminate/Routing/Pipeline.php">
+        <entry file="file://$PROJECT_DIR$/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="44">
-              <caret line="2" selection-start-line="2" selection-end-line="17" selection-end-column="35" />
+            <state relative-caret-position="29">
+              <caret line="146" column="55" selection-start-line="146" selection-start-column="55" selection-end-line="146" selection-end-column="55" />
             </state>
           </provider>
         </entry>
@@ -59,7 +77,7 @@
         <entry file="file://$PROJECT_DIR$/vendor/laravel/framework/src/Illuminate/Foundation/Application.php">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="113">
-              <caret line="823" column="4" lean-forward="true" selection-start-line="823" selection-start-column="4" selection-end-line="828" selection-end-column="5" />
+              <caret line="885" column="46" selection-start-line="885" selection-start-column="28" selection-end-line="885" selection-end-column="46" />
             </state>
           </provider>
         </entry>
@@ -90,6 +108,7 @@
       <find>register</find>
       <find>addDeferredServices</find>
       <find>boot</find>
+      <find>middleware.disable</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -113,6 +132,8 @@
         <option value="$PROJECT_DIR$/readme.md" />
         <option value="$PROJECT_DIR$/tests/demo.php" />
         <option value="$PROJECT_DIR$/document/handle.md" />
+        <option value="$PROJECT_DIR$/tests/demo2.php" />
+        <option value="$PROJECT_DIR$/tests/demo3.php" />
       </list>
     </option>
   </component>
@@ -347,11 +368,13 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="PHP Script.demo.php (1)">
+  <component name="RunManager" selected="PHP Script.demo3.php">
     <configuration name="phpunit.xml" type="PHPUnitRunConfigurationType" factoryName="PHPUnit">
       <TestRunner scope="XML" />
     </configuration>
     <configuration name="Test.php" type="PhpLocalRunConfigurationType" factoryName="PHP Console" temporary="true" path="$PROJECT_DIR$/document/test/Test.php" />
+    <configuration name="demo2.php" type="PhpLocalRunConfigurationType" factoryName="PHP Console" temporary="true" path="$PROJECT_DIR$/tests/demo2.php" />
+    <configuration name="demo3.php" type="PhpLocalRunConfigurationType" factoryName="PHP Console" temporary="true" path="$PROJECT_DIR$/tests/demo3.php" />
     <configuration name="demo.php (1)" type="PhpLocalRunConfigurationType" factoryName="PHP Console" temporary="true" path="$PROJECT_DIR$/tests/demo.php" />
     <configuration name="demo.php" type="PhpLocalRunConfigurationType" factoryName="PHP Console" temporary="true" path="$PROJECT_DIR$/document/test/demo.php" />
     <list>
@@ -359,9 +382,13 @@
       <item itemvalue="PHP Script.Test.php" />
       <item itemvalue="PHP Script.demo.php" />
       <item itemvalue="PHP Script.demo.php (1)" />
+      <item itemvalue="PHP Script.demo2.php" />
+      <item itemvalue="PHP Script.demo3.php" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="PHP Script.demo3.php" />
+        <item itemvalue="PHP Script.demo2.php" />
         <item itemvalue="PHP Script.demo.php (1)" />
         <item itemvalue="PHP Script.demo.php" />
         <item itemvalue="PHP Script.Test.php" />
@@ -379,12 +406,12 @@
       <option name="presentableId" value="Default" />
       <updated>1562743007111</updated>
       <workItem from="1562743008437" duration="10866000" />
-      <workItem from="1562936462435" duration="14727000" />
+      <workItem from="1562936462435" duration="17899000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="25593000" />
+    <option name="totallyTimeSpent" value="28765000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1382" height="744" extended-state="6" />
@@ -394,10 +421,10 @@
       <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" />
       <window_info anchor="bottom" id="Database Changes" order="7" />
       <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.30858085" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.37623763" />
       <window_info id="npm" side_tool="true" />
       <window_info anchor="bottom" id="Terminal" order="7" />
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.10514372" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.118003026" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="right" id="Database" order="3" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -419,30 +446,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/vendor/laravel/framework/composer.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="208">
-          <caret line="68" column="45" selection-end-line="144" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/document/crud.md">
-      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
-        <state split_layout="SPLIT">
-          <first_editor relative-caret-position="338">
-            <caret line="13" column="13" selection-start-line="13" selection-start-column="13" selection-end-line="13" selection-end-column="13" />
-          </first_editor>
-          <second_editor />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/resources/views/admin/index.blade.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="26">
-          <caret line="1" column="9" lean-forward="true" selection-end-line="1" selection-end-column="9" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/Http/Controllers/Admin/TestController.php">
       <provider selected="true" editor-type-id="text-editor">
         <state>
@@ -544,13 +547,6 @@
             <caret column="1" selection-start-column="1" selection-end-column="16" />
           </first_editor>
           <second_editor />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/Http/Kernel.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="364">
-          <caret line="62" column="6" lean-forward="true" selection-start-line="52" selection-start-column="4" selection-end-line="62" selection-end-column="6" />
         </state>
       </provider>
     </entry>
@@ -756,10 +752,34 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/vendor/laravel/framework/src/Illuminate/Routing/Pipeline.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1131">
+          <caret line="9" column="28" selection-start-line="9" selection-start-column="28" selection-end-line="9" selection-end-column="28" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/Http/Kernel.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="305">
+          <caret line="21" column="6" lean-forward="true" selection-start-line="15" selection-start-column="4" selection-end-line="21" selection-end-column="6" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/document/handle.md">
+      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+        <state split_layout="SPLIT">
+          <first_editor relative-caret-position="235">
+            <caret line="1160" column="58" selection-start-line="1160" selection-start-column="58" selection-end-line="1160" selection-end-column="58" />
+          </first_editor>
+          <second_editor />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/vendor/laravel/framework/src/Illuminate/Foundation/Application.php">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="113">
-          <caret line="823" column="4" lean-forward="true" selection-start-line="823" selection-start-column="4" selection-end-line="828" selection-end-column="5" />
+          <caret line="885" column="46" selection-start-line="885" selection-start-column="28" selection-end-line="885" selection-end-column="46" />
         </state>
       </provider>
     </entry>
@@ -772,25 +792,29 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="167">
-          <caret line="147" column="24" lean-forward="true" selection-start-line="147" selection-start-column="24" selection-end-line="147" selection-end-column="24" />
+        <state relative-caret-position="211">
+          <caret line="150" column="25" selection-start-line="150" selection-start-column="25" selection-end-line="150" selection-end-column="25" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/vendor/laravel/framework/src/Illuminate/Routing/Pipeline.php">
+    <entry file="file://$PROJECT_DIR$/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="44">
-          <caret line="2" selection-start-line="2" selection-end-line="17" selection-end-column="35" />
+        <state relative-caret-position="29">
+          <caret line="146" column="55" selection-start-line="146" selection-start-column="55" selection-end-line="146" selection-end-column="55" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/document/handle.md">
-      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
-        <state split_layout="SPLIT">
-          <first_editor relative-caret-position="609">
-            <caret line="1109" column="63" selection-start-line="1109" selection-start-column="57" selection-end-line="1109" selection-end-column="63" />
-          </first_editor>
-          <second_editor />
+    <entry file="file://$PROJECT_DIR$/tests/demo2.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="324">
+          <caret line="29" column="34" selection-start-line="29" selection-start-column="34" selection-end-line="29" selection-end-column="34" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/demo3.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="176">
+          <caret line="13" column="28" lean-forward="true" selection-start-line="13" selection-start-column="28" selection-end-line="13" selection-end-column="28" />
         </state>
       </provider>
     </entry>

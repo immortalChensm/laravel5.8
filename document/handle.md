@@ -1109,5 +1109,84 @@ class Kernel extends HttpKernel
     *
     * The exceptions are converted to HTTP responses for proper middleware handling.
     */
-   class Pipeline extends BasePipeline
+   class Pipeline extends BasePipeline{}
+   鸡类构造函数 
+   public function __construct(Container $container = null)
+       {
+           $this->container = $container;
+       }
+   ```  
+   
+   Pipeline->send()方法  
+   ```php  
+    public function send($passable)
+       {
+       //当前请求对象
+           $this->passable = $passable;
+   
+           return $this;
+       }
+   ```  
+   
+   Pipeline->through()方法  
+   ```php  
+   through($this->app->shouldSkipMiddleware() ? [] : $this->middleware) 
+   public function through($pipes)
+       {
+       //全局中间件数组【元素是类】  
+           $this->pipes = is_array($pipes) ? $pipes : func_get_args();
+   
+           return $this;
+       }
+   ```  
+   
+   Pipeline->then()方法  
+   ```php  
+   then($this->dispatchToRouter())   
+   //$this->dispatchToRouter()返回的是个匿名函数【还是双层封装的匿名函数】套路真多  
+  public function then(Closure $destination)
+      {
+      //后面我们来分析这玩意【这玩意是玄机】  
+          $pipeline = array_reduce(
+          //中间件数组倒序
+          /**
+         $middleware = [
+                  \App\Http\Middleware\CheckForMaintenanceMode::class,
+                  \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
+                  \App\Http\Middleware\TrimStrings::class,
+                  \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+                  \App\Http\Middleware\TrustProxies::class,
+              ];
+          **/
+          //所以先运行\App\Http\Middleware\TrustProxies::class它
+              array_reverse($this->pipes), $this->carry(), $this->prepareDestination($destination)
+          );
+  
+          return $pipeline($this->passable);
+      }
+   ```    
+   
+   路由调度`$this->dispatchToRouter()`   
+   
+   Kernel->dispatchToRouter()方法 
+   ```php  
+   protected function dispatchToRouter()
+       {
+           return function ($request) {
+               $this->app->instance('request', $request);
+   
+               return $this->router->dispatch($request);
+           };
+       }
+   ```  
+   再次封装  
+   ```php  
+    protected function prepareDestination(Closure $destination)
+       {
+           return function ($passable) use ($destination) {
+               return $destination($passable);
+           };
+       }
    ```
+   
+   
