@@ -1,4 +1,5 @@
-### CRUD整个流程注解 
+### CRUD整个流程注解  
+[首页](../readme.md)      [下一页：App\Http\Kernel内核实例化的流程注解](web.md)   
 - composer create-project laravel/laravel 
     运行此命令触发的玩意是啥？ 
     
