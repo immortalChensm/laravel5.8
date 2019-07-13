@@ -20,13 +20,21 @@ class RoutingServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        //router
         $this->registerRouter();
+        //url
         $this->registerUrlGenerator();
+        //redirect
         $this->registerRedirector();
+        //ServerRequestInterface::class
         $this->registerPsrRequest();
+        //ServerRequestInterface::class
         $this->registerPsrResponse();
+        //ResponseInterface::class
         $this->registerResponseFactory();
+        //ResponseFactoryContract::class
         $this->registerControllerDispatcher();
+        //ControllerDispatcherContract::class
     }
 
     /**
