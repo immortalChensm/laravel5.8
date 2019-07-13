@@ -5,29 +5,30 @@
  * Date: 2019/7/13
  * Time: 1:22
  */
-class A{
+class AV{
     public function handle($passable,$next)
     {
-        print_r($passable);
+        echo "先看片".PHP_EOL;
         return $next($passable);
+        //return true;
+        //throw new RuntimeException("error");
     }
 }
-class B{
+class Sleeping{
     public function handle($passable,$next)
     {
-        print_r($passable);
+        echo "再睡觉".PHP_EOL;
         return $next($passable);
     }
 }
 class pipeline{
 
-    public $pipes = [A::class,B::class];
+    public $pipes = [AV::class,Sleeping::class];
     public $passable = ['get'=>['a','c','b'],'post'=>['name'=>'jack']];
     public function callbacks()
     {
         return function ($passable){
-            //print_r($passable);
-            print_r(['msg'=>'ok']);
+            echo "然后XXOO".PHP_EOL;
         };
     }
     public function prepareDestination(Closure $destination)
@@ -38,6 +39,7 @@ class pipeline{
     }
     public function then(Closure $cbk)
     {
+
         $pipeline = array_reduce(
             array_reverse($this->pipes), $this->carry(), $this->prepareDestination($cbk)
         );
@@ -47,6 +49,7 @@ class pipeline{
 
     public function carry()
     {
+
         return function ($stack, $pipe) {
             return function ($passable) use ($stack, $pipe) {
                 if (is_callable($pipe)) {

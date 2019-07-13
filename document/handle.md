@@ -1187,6 +1187,290 @@ class Kernel extends HttpKernel
                return $destination($passable);
            };
        }
+   ```  
+   
+   中间件的运行原理流程【超车分析，严重考验开车技术】    
+   ```php  
+   $pipeline = array_reduce(
+               array_reverse($this->pipes), $this->carry(), $this->prepareDestination($destination)
+           );
+   
+           return $pipeline($this->passable);
+   ```  
+   [array_reduce手册](https://www.php.net/manual/zh/function.array-reduce.php)   
+   
+   下面看例子解释   
+   ```php  
+   <?php
+   /**
+    * Created by PhpStorm.
+    * User: 1655664358@qq.com
+    * Date: 2019/7/13
+    * Time: 1:22
+    */
+   class AV{
+       public function handle($passable,$next)
+       {
+           echo "先看片".PHP_EOL;
+           return $next($passable);
+       }
+   }
+   class Sleeping{
+       public function handle($passable,$next)
+       {
+           echo "再睡觉".PHP_EOL;
+           return $next($passable);
+       }
+   }
+   class pipeline{
+   
+       public $pipes = [AV::class,Sleeping::class];
+       public $passable = ['get'=>['a','c','b'],'post'=>['name'=>'jack']];
+       public function callbacks()
+       {
+           return function ($passable){
+               echo "然后XXOO".PHP_EOL;
+           };
+       }
+       public function prepareDestination(Closure $destination)
+       {
+           return function ($passable)use($destination){
+               return $destination($passable);
+           };
+       }
+       public function then(Closure $cbk)
+       {
+           
+           $pipeline = array_reduce(
+               array_reverse($this->pipes), $this->carry(), $this->prepareDestination($cbk)
+           );
+   
+           return $pipeline($this->passable);
+       }
+   
+       public function carry()
+       {
+   
+           return function ($stack, $pipe) {
+               return function ($passable) use ($stack, $pipe) {
+                   if (is_callable($pipe)) {
+                       return $pipe($passable, $stack);
+                   } elseif (! is_object($pipe)) {
+                       $pipe = new $pipe;
+                       $parameters = [];
+                       $parameters = array_merge([$passable, $stack], $parameters);
+                   } else {
+                       $parameters = [$passable, $stack];
+                   }
+                   $response = method_exists($pipe, 'handle')
+                       ? $pipe->{'handle'}(...$parameters)
+                       : $pipe(...$parameters);
+   
+                   return $response;
+               };
+           };
+       }
+   }
+   class start{
+   
+       public $middleware = [];
+       public function __construct()
+       {
+   
+           $pipe = new pipeline();
+           return $pipe->then($pipe->callbacks());
+       }
+   }
+   
+   (new start());
+
+   ```  
+   第一次运行时：  
+   callbacks是这样的【记住A函数】：  
+   ```php  
+   function ($passable){
+        echo "然后XXOO".PHP_EOL;
+   };
+   ```  
+   prepareDestination($cbk)后是这样的【记住B函数】:   
+   ```php  
+   function ($passable)use($destination){
+        return $destination($passable);//$destination=A函数
+   };
+   ```  
+   $this->carry()是这样的:  
+   
+   ```php  
+   //$stack此时的内容是B函数 
+   //$pipe=Sleeping::class
+   //C函数运行后，返回一坨匿名函数 
+   //返回的匿名函数是这样的[记住D函数]： 
+   /**
+   【D函数】function ($passable) use ($stack=B函数, $pipe=Sleeping::class) {
+                  if (is_callable($pipe)) {
+                      return $pipe($passable, $stack=B函数);
+                  } elseif (! is_object($pipe=Sleeping::class)) {
+                      $pipe = new $pipe=Sleeping::class;
+                      $parameters = [];
+                      $parameters = array_merge([$passable, $stack=B函数], $parameters);
+                  } else {
+                      $parameters = [$passable, $stack=B函数];
+                  }
+                  $response = method_exists($pipe=Sleeping::class, 'handle')
+                      ? $pipe->{'handle'}(...$parameters)
+                      : $pipe(...$parameters);
+   
+                  return $response;
+    };
+   **/
+   【C函数】function ($stack=B函数 , $pipe=Sleeping::class ) {
+           return function ($passable) use ($stack=B函数, $pipe=Sleeping::class ) {
+               if (is_callable($pipe=Sleeping::class)) {
+                   return $pipe($passable, $stack=B函数);
+               } elseif (! is_object($pipe=Sleeping::class)) {
+                   $pipe = new $pipe;
+                   $parameters = [];
+                   $parameters = array_merge([$passable, $stack=B函数], $parameters);
+               } else {
+                   $parameters = [$passable, $stack=B函数];
+               }
+               $response = method_exists($pipe=Sleeping::class, 'handle')
+                   ? $pipe->{'handle'}(...$parameters)
+                   : $pipe(...$parameters);
+
+               return $response;
+           };
+   };
    ```
-   
-   
+  第二次运行时： 
+  函数就是这样的： 
+  ```php  
+  //$stack=D函数【这是关键，这是最骚的地方，把第一次开车得到的D函数作为了参数开进来了】    
+  //$pipe=AV::class   
+  /**
+  同样返回一个匿名函数[运行E函数后返回]
+  【记住F函数】function ($passable) use ($stack=D函数, $pipe=AV::class   ) {
+                    if (is_callable($pipe=AV::class)) {
+                        return $pipe($passable, $stack=D函数);
+                    } elseif (! is_object($pipe=AV::class)) {
+                        $pipe = new $pipe=AV::class;
+                        $parameters = [];
+                        $parameters = array_merge([$passable, $stack=D函数], $parameters);
+                    } else {
+                        $parameters = [$passable, $stack=D函数];
+                    }
+                    $response = method_exists($pipe=AV::class, 'handle')
+                        ? $pipe->{'handle'}(...$parameters)
+                        : $pipe(...$parameters);
+    
+                    return $response;
+  };
+  **/
+  【E函数】function ($stack=D函数, $pipe=AV::class  ) {
+              return function ($passable) use ($stack, $pipe) {
+                  if (is_callable($pipe)) {
+                      return $pipe($passable, $stack);
+                  } elseif (! is_object($pipe)) {
+                      $pipe = new $pipe;
+                      $parameters = [];
+                      $parameters = array_merge([$passable, $stack], $parameters);
+                  } else {
+                      $parameters = [$passable, $stack];
+                  }
+                  $response = method_exists($pipe, 'handle')
+                      ? $pipe->{'handle'}(...$parameters)
+                      : $pipe(...$parameters);
+  
+                  return $response;
+              };
+  };
+  ```  
+  
+  运行返回函数【开车】  
+  `return $pipeline($this->passable);`   
+  此时`$pipeline`是这样的骚货【F函数】  
+  ```php   
+  //$stack=D函数 
+  //$pipe=AV::class
+  function ($passable) use ($stack=D函数, $pipe=AV::class   ) {
+                      if (is_callable($pipe=AV::class)) {
+                          return $pipe($passable, $stack=D函数);
+                      } elseif (! is_object($pipe=AV::class)) { 
+                      //实例化AV类
+                          $pipe = new $pipe=AV::class;
+                          $parameters = [];
+                          $parameters = array_merge([$passable, $stack=D函数], $parameters);
+                      } else {
+                          $parameters = [$passable, $stack=D函数];
+                      }
+                      $response = method_exists($pipe=AV::class, 'handle')
+                          ? $pipe->{'handle'}(...$parameters)
+                          : $pipe(...$parameters);
+      
+                      return $response;
+    };
+  ```    
+  这个时候函数调用就是这样的：     
+  ```php  
+  【运行F函数】function($passable)use($stack=D函数, $pipe=AV::class);     
+    {   
+            return $pipe=AV::class->hanlde($stack=D函数,$passable);
+    }    
+  ```   
+  AV函数运行：  
+  `return $pipe=AV::class->hanlde($stack=D函数,$passable);`  
+  ```php  
+  public function handle($passable,$next)
+      {
+          echo "先看片".PHP_EOL;//打印信息
+          return $next($passable);//$next=$stack=D函数
+  }
+  ```  
+  【运行D函数】  
+  ```php  
+  function ($passable) use ($stack=B函数, $pipe=Sleeping::class) {
+                    if (is_callable($pipe)) {
+                        return $pipe($passable, $stack=B函数);
+                    } elseif (! is_object($pipe=Sleeping::class)) {
+                    //实例化睡觉类
+                        $pipe = new $pipe=Sleeping::class;
+                        $parameters = [];
+                        $parameters = array_merge([$passable, $stack=B函数], $parameters);
+                    } else {
+                        $parameters = [$passable, $stack=B函数];
+                    }
+                    $response = method_exists($pipe=Sleeping::class, 'handle')
+                        ? $pipe->{'handle'}(...$parameters)
+                        : $pipe(...$parameters);
+     
+                    return $response;
+      };
+  ```  
+  Sleeping类运行  
+  ```php  
+  public function handle($passable,$next=B函数)
+      {
+          echo "再睡觉".PHP_EOL;
+          return $next($passable);//此时它是B函数
+  }
+  ```  
+  【运行B函数】  
+  ```php  
+   function ($passable)use($destination){
+          return $destination($passable);//$destination=A函数
+   };
+  ```  
+  【运行A函数】   
+  ```php  
+  function ($passable){
+          echo "然后XXOO".PHP_EOL;
+  };
+  ```  
+  
+  自此中间件类的运行原理就解释完毕！！！【如果没有听懂，希望自己去测试下我这个例子，ok】  
+  输出结果：  
+  ![middleware](images/middleware.png)
+  
+  
+  
+  
