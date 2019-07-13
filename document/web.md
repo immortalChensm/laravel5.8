@@ -1,4 +1,4 @@
-### CRUD整个流程注解    
+### CRUD整个流程注解    【App\Http\Kernel内核实例化的流程注解】     
 [首页](../readme.md) [下一页：App\Http\Kernel的handle开车流程](handle.md)  [上一页：安装框架说明](crud.md) 
 本篇将写一个控制器输出数据库里的内容并展示在模板文件里，我们分析它的整个架构流程  
 

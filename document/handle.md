@@ -1,4 +1,6 @@
-## CRUD整个流程注解     
+## CRUD整个流程注解     【App\Http\Kernel的handle开车流程】       
+[首页](../readme.md) [下一页：App\Http\Kernel的路由加载【注册】流程](route.md)  [上一页：App\Http\Kernel内核实例化的流程注解](web.md)   
+
 - App\Http\Kernel类  
 
 ```php  
