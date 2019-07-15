@@ -964,10 +964,609 @@
          if ($method === 'middleware') {
              return (new RouteRegistrar($this))->attribute($method, is_array($parameters[0]) ? $parameters[0] : $parameters);
          }
- 
+            
+         //不是中间件调用的时候运行此处
          return (new RouteRegistrar($this))->attribute($method, $parameters[0]);
+     }
+ ```   
+ Illuminate\Routing\RouteRegistrar实例化【实例化时构造先运行，基本功】    
+ ```php  
+public function __construct(Router $router)
+    {
+    //Illuminate\Routing\Router
+        $this->router = $router;
+    } 
+ ```  
+ 
+ RouteRegistrar->attribute()方法  
+ ```php  
+ public function attribute($key, $value)
+     {
+         if (! in_array($key, $this->allowedAttributes)) {
+             throw new InvalidArgumentException("Attribute [{$key}] does not exist.");
+         }
+            
+            //存储属性
+         $this->attributes[Arr::get($this->aliases, $key, $key)] = $value;
+ 
+         return $this;
+     }
+ ```  
+ `Arr::get($this->aliases, $key, $key)`其中Arr::get这里直接返回$key默认值  
+ [Arr相关方法注解](Arr.md)     
+ [RouteRegistrar运行时数据存储情况](RouteRegistrar.md)    
+ ![路由属性存储](images/路由属性.png)        
+ 
+ Router->namespace('App\Http\Controllers')方法   
+ ```php  
+ 同样的一个流程，数据存储【namespace='App\Http\Controllers'】存储在atrributes数组里  
+ ```  
+ 
+ 加载web路由文件【执行路由文件】group(base_path('routes/web.php'))     
+   
+ ```php  
+ public function group(array $attributes, $routes)
+     {
+     //路由属性压栈
+         $this->updateGroupStack($attributes);
+         //加载路由
+         $this->loadRoutes($routes);
+          //路由属性弹栈
+         array_pop($this->groupStack);
+     }
+ ```  
+ Router->updateGroupStack方法   
+ ```php  
+ protected function updateGroupStack(array $attributes)
+     {
+     //首次运行是为数组
+         if (! empty($this->groupStack)) {
+             $attributes = $this->mergeWithLastGroup($attributes);
+         }
+ 
+ /**
+ 这数组不断的调用时
+ 下标会不断的增大【形成所谓的压栈操作】
+ **/
+         $this->groupStack[] = $attributes;
+     }
+ ```  
+ Router->loadRoutes方法     
+ ```php  
+ protected function loadRoutes($routes)
+     {
+     //匿名函数的话直接运行
+         if ($routes instanceof Closure) {
+             $routes($this);
+         } else {
+         //LTS5.5是直接引入运行的   
+             (new RouteFileRegistrar($this))->register($routes);
+         }
+     }
+ ```  
+ Illuminate\Routing\RouteFileRegistrar路由文件加载   
+ ```php  
+ <?php
+ namespace Illuminate\Routing;
+ class RouteFileRegistrar
+ {
+     /**
+      * The router instance.
+      *
+      * @var \Illuminate\Routing\Router
+      */
+     protected $router;
+     public function __construct(Router $router)
+     {
+         $this->router = $router;
+     }
+     public function register($routes)
+     {
+         $router = $this->router;
+         //执行路由文件
+         require $routes;
+     }
+ }
+
+ ```  
+ 路由文件内容 routes/web.php     
+ ```php  
+ <?php
+ 
+ /*
+ |--------------------------------------------------------------------------
+ | Web Routes
+ |--------------------------------------------------------------------------
+ |
+ | Here is where you can register web routes for your application. These
+ | routes are loaded by the RouteServiceProvider within a group which
+ | contains the "web" middleware group. Now create something great!
+ |
+ */
+ 
+ Route::get('/', function () {
+     return view('welcome');
+ });
+ 
+ Route::get('/test', "Admin\TestController@index");
+
+ ```  
+ 这个路由文件并没有通过use导入类的完整命名空间但引入却能运行【原因是框架在启动时（http请求时)，就向自动加载队列里插入【进队】  
+ 了一个自动加载的处理方法，并且是直接插入到队头，而composer的自动加载是在后面的】  
+ 形成如下队列    
+ 门面类（伪装类）的自动加载处理函数|composer的自动加载处理函数|xxxxx   
+ 队头                                                   队尾   
+ 
+ 队头的自动加载先捕获到Route类【从而触发AliasLoader.php的load处理函数，具体怎么处理自己去看】   
+ 后面的实例化Route（实例化的Illuminate\Routing\Router类)返回   
+ 
+ 
+ Router->get()方法   
+ ```php  
+  public function get($uri, $action = null)
+     {
+         return $this->addRoute(['GET', 'HEAD'], $uri, $action);
+     }
+ ```  
+ 
+ Router->addRoute()方法  
+ ```php  
+ $methods=['GET', 'HEAD'], 
+ $uri='/test', 
+ $action=Admin\TestController@index
+ public function addRoute($methods, $uri, $action)
+     {
+     //返回的天下时局图【Route类天下时局图】  
+         return $this->routes->add($this->createRoute($methods, $uri, $action));
+     }
+ ```  
+ 
+ Router->createRoute()方法   
+ ```php  
+ protected function createRoute($methods, $uri, $action)
+     {
+     //是字符串时
+         if ($this->actionReferencesController($action)) {
+         /**
+         得到的数据结果
+         $action = [
+                     'controller'=>App\Http\Controllers\Admin\TestController@index,
+                     'uses'=>App\Http\Controllers\Admin\TestController@index,
+                  ]
+         **/
+             $action = $this->convertToControllerAction($action);
+         }
+         /**
+         构建路由对象返回
+         **/
+         $route = $this->newRoute(
+             $methods, $this->prefix($uri), $action
+         );
+         /**
+          public function hasGroupStack()
+             {
+                 return ! empty($this->groupStack);
+             }
+         **/
+         if ($this->hasGroupStack()) {
+             $this->mergeGroupAttributesIntoRoute($route);
+         }
+         $this->addWhereClausesToRoute($route);
+ 
+         return $route;
+     }
+ ```  
+ 
+ Router->actionReferencesController()方法 【判断$action是匿名函数否】【匿名函数返回false,字符串返回true】
+ ```php  
+ protected function actionReferencesController($action)
+     {
+         if (! $action instanceof Closure) {
+             return is_string($action) || (isset($action['uses']) && is_string($action['uses']));
+         }
+ 
+         return false;
+     }
+ ```  
+ Router->convertToControllerAction()方法【拼装为完整的控制器类名返回，主要是拼装它的控制器命名空间】   
+ ```php  
+ protected function convertToControllerAction($action)
+     {
+     //是字符串
+         if (is_string($action)) {
+             $action = ['uses' => $action];
+         }
+         /**
+         $action = [
+            'uses'=>Admin\TestController@index
+         ]
+         **/
+         if (! empty($this->groupStack)) {
+         //拼装成完整的控制器【含有命名空间】返回
+         /**
+         $action = [
+            'uses'=>App\Http\Controllers\Admin\TestController@index
+         ]
+         **/
+             $action['uses'] = $this->prependGroupNamespace($action['uses']);
+         }
+         /**
+         $action = [
+            'controller'=>App\Http\Controllers\Admin\TestController@index,
+            'uses'=>App\Http\Controllers\Admin\TestController@index,
+         ]
+         **/
+         $action['controller'] = $action['uses'];
+ 
+         return $action;
      }
  ```
  
+ Router->prependGroupNamespace方法     
+ ```php  
+ $class=Admin\TestController@index
+ protected function prependGroupNamespace($class)
+     {
+     //弹栈后得到  
+     /**
+     $group=[
+        'middleware'=>['web']
+        'namespace'=>'App\Http\Controllers'
+     ]
+     **/
+         $group = end($this->groupStack);
+        //拼装为App\Http\Controllers\Admin\TestController@index完整的类返回
+         return isset($group['namespace']) && strpos($class, '\\') !== 0
+                 ? $group['namespace'].'\\'.$class : $class;
+     }
+ ```  
  
+ Router->newRoute方法     
+  
+ ```php  
+ $methods=['GET', 'HEAD'], 
+  $uri='test', 
+  $action=[
+       'controller'=>App\Http\Controllers\Admin\TestController@index,
+       'uses'=>App\Http\Controllers\Admin\TestController@index,
+  ]
+ protected function newRoute($methods, $uri, $action)
+     {
+         return (new Route($methods, $uri, $action))
+                     ->setRouter($this)
+                     ->setContainer($this->container);
+     }
+ ```  
+ Router->prefix()方法  【拼装路由前缀返回完整uri】 
+ 
+ ```php  
+ protected function prefix($uri)
+     {
+         return trim(trim($this->getLastGroupPrefix(), '/').'/'.trim($uri, '/'), '/') ?: '/';
+     }
+ ```  
+ Router->getLastGroupPrefix()方法 【得到路由的prefix前缀，如果设置了prefix路由属性的话】 
+ 
+ ```php  
+   public function getLastGroupPrefix()
+     {
+         if (! empty($this->groupStack)) {
+         //弹栈后得到  
+         /**
+          $last=[
+                 'middleware'=>['web']
+                 'namespace'=>'App\Http\Controllers'
+              ]
+         **/
+             $last = end($this->groupStack);
+ 
+             return $last['prefix'] ?? '';
+         }
+ 
+         return '';
+     }
+ ```   
+ 
+ Illuminate\Routing\Route路由实例构造【注意和路由器Router的名称区别哦】  
+ ```php  
+ $methods=['GET', 'HEAD'], 
+   $uri='test', 
+   $action=[
+        'controller'=>App\Http\Controllers\Admin\TestController@index,
+        'uses'=>App\Http\Controllers\Admin\TestController@index,
+   ]
+ public function __construct($methods, $uri, $action)
+     {
+         $this->uri = $uri;
+         $this->methods = (array) $methods;
+         //这里原样保存【后面我们分析匿名函数类的路由时再来看】
+         $this->action = $this->parseAction($action);
+        //这里不用说，好理解
+         if (in_array('GET', $this->methods) && ! in_array('HEAD', $this->methods)) {
+             $this->methods[] = 'HEAD';
+         }
+       //这个也好说，不用解释【后面我们弄前缀路由时再来看】   
+         if (isset($this->action['prefix'])) {
+             $this->prefix($this->action['prefix']);
+         }
+     }
+ ```  
+ 
+ Route->parseAction()方法  
+ ```php  
+  protected function parseAction($action)
+     {
+         return RouteAction::parse($this->uri, $action);
+     }
+ ```  
+ 
+ RouteAction::parse方法  
+ ```php  
+ public static function parse($uri, $action)
+     {
+     //为空时
+         if (is_null($action)) {
+             return static::missingAction($uri);
+         }
+        //$action时匿名函数的时候
+        //暂时先不考虑【后面再说】按下不表
+         if (is_callable($action, true)) {
+             return ! is_array($action) ? ['uses' => $action] : [
+                 'uses' => $action[0].'@'.$action[1],
+                 'controller' => $action[0].'@'.$action[1],
+             ];
+         }
+        //这也不用管
+         elseif (! isset($action['uses'])) {
+             $action['uses'] = static::findCallable($action);
+         }
+        //存在uses不含有@符号时
+         if (is_string($action['uses']) && ! Str::contains($action['uses'], '@')) {
+             $action['uses'] = static::makeInvokable($action['uses']);
+         }
+ 
+         return $action;
+     }
+ ```
+ Router->mergeGroupAttributesIntoRoute方法   
+ ```php  
+ protected function mergeGroupAttributesIntoRoute($route)
+     {
+     /**
+      public function getAction($key = null)
+         {
+             return Arr::get($this->action, $key);
+         } 
+     **/
+     //不用说全返回数组 
+     /**
+    [
+     middleware=[
+            web
+         ],
+     uses=App\Http\Controllers\Admin\TestController@index,
+     controller=App\Http\Controllers\Admin\TestController@index,
+     namespace=App\Http\Controllers,
+     where=[],
+    ]
+     
+     **/
+         $route->setAction($this->mergeWithLastGroup($route->getAction()));
+     }
+ ```  
+ 
+ Router->mergeWithLastGroup()方法  
+ ```php 
+ $new=[
+         'controller'=>App\Http\Controllers\Admin\TestController@index,
+         'uses'=>App\Http\Controllers\Admin\TestController@index,
+    ]
+    $this->groupStack=[
+    0=>[
+                'middleware'=>[
+                        0=>'web'
+                ],
+                namespace='App\Http\Controllers'
+            ]
+    ]
+   public function mergeWithLastGroup($new)
+     {
+     //
+         return RouteGroup::merge($new, end($this->groupStack));
+     }
+ ```  
+ 
+ RouteGroup::merge（）方法  
+ ```php  
+ $new=[
+          'controller'=>App\Http\Controllers\Admin\TestController@index,
+          'uses'=>App\Http\Controllers\Admin\TestController@index,
+     ]
+   
+      $old = 'middleware'=>[
+                         0=>'web'
+                 ],
+                 namespace='App\Http\Controllers'
+             ]
+     ]
+  public static function merge($new, $old)
+     {
+     //存在域名路由选项则删除
+         if (isset($new['domain'])) {
+             unset($old['domain']);
+         }
+ 
+ //static::formatAs($new, $old) 返回$new【原样】
+         $new = array_merge(static::formatAs($new, $old), [
+             'namespace' => static::formatNamespace($new, $old),
+             'prefix' => static::formatPrefix($new, $old),
+             'where' => static::formatWhere($new, $old),
+         ]);
+        /**
+        uses=App\Http\Controllers\Admin\TestController@index
+        controller=App\Http\Controllers\Admin\TestController@index
+        namespace=App\Http\Controllers
+        prefix=null
+        where=[]
+        **/
+        //数组递归合并https://www.php.net/manual/zh/function.array-merge-recursive.php  
+        
+         return array_merge_recursive(Arr::except(
+             $old, ['namespace', 'prefix', 'where', 'as']
+         ), $new);
+     }
+ ```  
+ RouteGroup::formatAs（）方法【as拼装】  
+ ```php  
+  protected static function formatAs($new, $old)
+     {
+     //存在as选项的话 
+     //拼装as选项的返回
+         if (isset($old['as'])) {
+             $new['as'] = $old['as'].($new['as'] ?? '');
+         }
+ 
+         return $new;
+     }
+ ```  
+ RouteGroup::formatNamespace（）方法  【命名空间拼装】 
+ 
+ ```php  
+ protected static function formatNamespace($new, $old)
+     {
+     //定义的路由存在namespace
+     //则将根命名空间+子命名空间拼装返回
+         if (isset($new['namespace'])) {
+             return isset($old['namespace']) && strpos($new['namespace'], '\\') !== 0
+                     ? trim($old['namespace'], '\\').'\\'.trim($new['namespace'], '\\')
+                     : trim($new['namespace'], '\\');
+         }
+ 
+         return $old['namespace'] ?? null;
+     }
+ ```  
+ RouteGroup::formatPrefix（）方法  【路由前缀拼装】 
+ ```php  
+  protected static function formatPrefix($new, $old)
+     {
+         $old = $old['prefix'] ?? null;
+ 
+         return isset($new['prefix']) ? trim($old, '/').'/'.trim($new['prefix'], '/') : $old;
+     }
+ ```  
+ RouteGroup::formatWhere（）方法  【路由where拼装】 
+ ```php  
+ protected static function formatWhere($new, $old)
+     {
+         return array_merge(
+             $old['where'] ?? [],
+             $new['where'] ?? []
+         );
+     }
+ ```   
+ 
+ Router->addWhereClausesToRoute()方法   
+ 
+ ```php  
+ protected function addWhereClausesToRoute($route)
+     {
+         $route->where(array_merge(
+             $this->patterns, $route->getAction()['where'] ?? []
+         ));
+ 
+         return $route;
+     }
+ ```
+ 
+ Router->createRoute跑完后【装逼后】得到类整个结构图如下  
+ ![createRouter](images/route.png)  
+ 
+ Illuminate\Routing\RouteCollection->add()方法   
+ ```php  
+ public function add(Route $route)
+     {
+         $this->addToCollections($route);
+ 
+         $this->addLookups($route);
+ 
+         return $route;
+     }
+ ```  
+ Illuminate\Routing\addToCollections->add()方法  
+ ```php  
+ protected function addToCollections($route)
+     {
+     /**
+      public function getDomain()
+         {
+             return isset($this->action['domain'])
+                     ? str_replace(['http://', 'https://'], '', $this->action['domain']) : null;
+         }
+      public function uri()
+          {
+              return $this->uri;
+          }
+     **/
+     //返回域名拼装uri地址
+         $domainAndUri = $route->getDomain().$route->uri();
+     //循环方法
+     /**
+     public function methods()
+         {
+             return $this->methods;
+         }
+     **/
+         foreach ($route->methods() as $method) {
+         //请求方法->请求uri完整地址=路由对象
+             $this->routes[$method][$domainAndUri] = $route;
+         }
+        //请求方法.请求uri地址=路由对象
+         $this->allRoutes[$method.$domainAndUri] = $route;
+     }
+ ```  
+ Illuminate\Routing\addToCollections->addLookups()方法  
+ ```php  
+ protected function addLookups($route)
+     {
+         /**
+          public function getName()
+             {
+                 return $this->action['as'] ?? null;
+             }
+         **/
+         //这里没有东西啊，不用管
+         if ($name = $route->getName()) {
+             $this->nameList[$name] = $route;
+         }
+        //取回东西
+         $action = $route->getAction();
+ 
+         if (isset($action['controller'])) {
+             $this->addToActionList($action, $route);
+         }
+     }
+ ```  
+ Illuminate\Routing\addToCollections->addToActionList()方法  
+ ```php  
+ protected function addToActionList($action, $route)
+     {
+     //控制器列表
+         $this->actionList[trim($action['controller'], '\\')] = $route;
+     }
+ ```  
+ 
+ Router->add()之后RouteCollection数据存储状态图  
+ ![routeCollection](images/routeCollection.png)  
+ 
+ ![routeCollection](images/routeCollection1.png)  
+ 
+ routes/api.php路由图  
+ ![routeCollection](images/api路由.png)    
+ 
+ 匿名函数的路由  
+ ![routeCollection](images/匿名函数路由.png)  
+ 
+ 自此路由注册原理解释完成  
+ 
+ 那么一节将介绍路由寻址【即匹配】的流程说明   
  

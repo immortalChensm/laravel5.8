@@ -456,4 +456,39 @@ middleware=[
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
 ]
+
+protected $events;
+
+
+protected $container;
+
+
+protected $routes;
+
+
+protected $current;
+
+
+protected $currentRequest;
+
+
+
+public $middlewarePriority = [];
+
+
+protected $binders = [];
+
+
+protected $patterns = [];
+
+protected $groupStack = [
+    0=>[
+        'middleware'=>[
+                0=>'web'
+        ],
+        namespace='App\Http\Controllers'
+    ]
+];
+
+public static $verbs = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
 ```
