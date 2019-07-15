@@ -148,7 +148,36 @@ bindings=[
                                                           return $container->resolve(
                                                               $concrete, $parameters, $raiseEvents = false
                                                           );
-                                                      }',                                                                                           
+                                                      }',  
+    'db.factory'=>'function ($app) {
+    //Illuminate\Database\Connectors\ConnectionFactory
+                               return new ConnectionFactory($app);
+                           }',       
+    
+    'db'=>'function ($app) {
+    Illuminate\Database\DatabaseManager
+                       return new DatabaseManager($app, $app['db.factory']);
+                   }',     
+                   
+    'db.connection'=>' function ($app) {
+                                  return $app['db']->connection();
+                              }',   
+    'Faker\Generator as FakerGenerator'=>'function ($app) {
+                                                      return FakerFactory::create($app['config']->get('app.faker_locale', 'en_US'));
+                                                  }',    
+                                                  
+    'Illuminate\Database\Eloquent\Factory as EloquentFactory'=>'function ($app) {
+                                                                            return EloquentFactory::construct(
+                                                                                $app->make(FakerGenerator::class), $this->app->databasePath('factories')
+                                                                            );
+                                                                        }', 
+    'Illuminate\Contracts\Queue\EntityResolver'=>'function () {
+    Illuminate\Database\Eloquent\QueueEntityResolver
+                                                              return new QueueEntityResolver;
+                                                          }',                                                                    
+                                                                                                                                              
+                                                                                                                                           
+                                                                                                                                               
                                                                                                                                                                                                                                                                                                                                                 
 ]
 
