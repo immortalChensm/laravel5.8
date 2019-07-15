@@ -1,5 +1,5 @@
 ## CRUD整个流程注解 【App\Http\Kernel的路由调度流程】【路由寻址】       
-[首页](../readme.md) [下一页：待定](dispatch.md)  [上一页：App\Http\Kernel的路由加载【注册】流程](route.md)  
+[首页](../readme.md) [下一页：数据库DB和模型类实现流程](db.md)  [上一页：App\Http\Kernel的路由加载【注册】流程](route.md)  
 
 - 路由寻址过程   
     就是http请求时，它会从路由集合【routeCollection】里检索到对应的路由，本座称为路由寻址   
