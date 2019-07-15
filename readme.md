@@ -4,6 +4,7 @@
 
 ## Laravel reading
 - **[框架部分核心类的数据存储](document/app.md)**
+- **[RouteCollection路由集合池数据存储](document/routeCollection.md)**
 
 
 - **[安装框架说明](document/crud.md)**

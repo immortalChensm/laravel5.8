@@ -30,8 +30,12 @@ protected $routes = [
         }
     ],
     HEAD=>[
-            api/user=>route实例
-            /=>route实例
+            api/user=>route实例【 action['uses']=>function (Request $request) {
+                                  return $request->user();
+                              }】
+            /=>route实例【action['uses']=>function () {
+                           return view('welcome');
+                       }】
             test=>route实例
         ]
 ];
