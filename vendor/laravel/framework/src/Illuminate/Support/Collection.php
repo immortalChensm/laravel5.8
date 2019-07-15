@@ -67,6 +67,7 @@ class Collection implements ArrayAccess, Arrayable, Countable, IteratorAggregate
      */
     public function __construct($items = [])
     {
+        $d = $items;
         $this->items = $this->getArrayableItems($items);
     }
 
@@ -812,6 +813,7 @@ class Collection implements ArrayAccess, Arrayable, Countable, IteratorAggregate
      */
     public function first(callable $callback = null, $default = null)
     {
+        $c = $this->items;
         return Arr::first($this->items, $callback, $default);
     }
 
@@ -1388,6 +1390,8 @@ class Collection implements ArrayAccess, Arrayable, Countable, IteratorAggregate
         foreach ($this->items as $key => $item) {
             $partitions[(int) ! $callback($item, $key)][$key] = $item;
         }
+
+        $b = $partitions;
 
         return new static($partitions);
     }

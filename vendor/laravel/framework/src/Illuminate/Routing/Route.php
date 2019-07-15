@@ -266,7 +266,7 @@ class Route
     public function matches(Request $request, $includingMethod = true)
     {
         $this->compileRoute();
-
+        $b =1;
         foreach ($this->getValidators() as $validator) {
             if (! $includingMethod && $validator instanceof MethodValidator) {
                 continue;
@@ -291,6 +291,7 @@ class Route
             $this->compiled = (new RouteCompiler($this))->compile();
         }
 
+        $a = $this->compiled;
         return $this->compiled;
     }
 
@@ -307,6 +308,7 @@ class Route
         $this->parameters = (new RouteParameterBinder($this))
                         ->parameters($request);
 
+        $c = $this->parameters;
         $this->originalParameters = $this->parameters;
 
         return $this;

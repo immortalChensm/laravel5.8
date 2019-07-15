@@ -52,6 +52,10 @@ class Route implements \Serializable
      */
     public function __construct(string $path, array $defaults = [], array $requirements = [], array $options = [], ?string $host = '', $schemes = [], $methods = [], ?string $condition = '')
     {
+        /**
+         *
+         * $uri=$path, $optionals=$defaults, $this->route->wheres=$requirements, ['utf8' => true]=$options, $this->route->getDomain() ?: ''=$host
+         */
         $this->setPath($path);
         $this->addDefaults($defaults);
         $this->addRequirements($requirements);

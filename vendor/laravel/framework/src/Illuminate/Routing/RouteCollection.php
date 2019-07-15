@@ -193,6 +193,8 @@ class RouteCollection implements Countable, IteratorAggregate
             return $route->isFallback;
         });
 
+        $b = $fallbacks;
+        $c = $routes;
         return $routes->merge($fallbacks)->first(function ($value) use ($request, $includingMethod) {
             return $value->matches($request, $includingMethod);
         });

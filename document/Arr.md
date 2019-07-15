@@ -99,4 +99,30 @@ public static function forget(&$array, $keys)
             unset($array[array_shift($parts)]);
         }
     }
+```  
+
+first()方法  
+```php  
+public static function first($array, callable $callback = null, $default = null)
+    {
+    //回调函数是空的情况
+        if (is_null($callback)) {
+            if (empty($array)) {
+                return value($default);
+            }
+
+            foreach ($array as $item) {
+                return $item;
+            }
+        }
+
+//循环数组，并且给回调函数key,value参数，同时返回$value
+        foreach ($array as $key => $value) {
+            if (call_user_func($callback, $value, $key)) {
+                return $value;
+            }
+        }
+
+        return value($default);
+    }
 ```

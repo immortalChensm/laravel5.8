@@ -22,7 +22,8 @@ instances=[
     'request'=>Illuminate\Http\Request实例,
     'config'=>Illuminate\Config\Repository实例,
     'routes'=>Illuminate\Routing\RouteCollection实例,
-    'routes'=>Illuminate\Routing\RouteCollection实例,
+     Route::class=>Illuminate\Routing\Route实例【http请求匹配到的对象实例】,
+    
 ]
 
 bootedCallbacks=>[
@@ -473,7 +474,14 @@ protected $currentRequest;
 
 
 
-public $middlewarePriority = [];
+public $middlewarePriority = [
+\Illuminate\Session\Middleware\StartSession::class,
+\Illuminate\View\Middleware\ShareErrorsFromSession::class,
+\Illuminate\Auth\Middleware\Authenticate::class,
+\Illuminate\Session\Middleware\AuthenticateSession::class,
+\Illuminate\Routing\Middleware\SubstituteBindings::class,
+\Illuminate\Auth\Middleware\Authorize::class,
+];
 
 
 protected $binders = [];

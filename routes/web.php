@@ -11,9 +11,9 @@
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+//Route::get('/', function () {
+//    return view('welcome');
+//});
 
-Route::get('/test', "Admin\TestController@index");
+Route::get('/test/{users}', "Admin\TestController@index");
 
