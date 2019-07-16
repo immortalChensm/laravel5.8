@@ -171,4 +171,41 @@ shuffle混乱数组
 
         return $array;
     }
+```  
+
+map方法  【循环数组，并使用匿名函数处理，分别传递数组，数组的索引数组，最后处理的结果再合并索引组合返回】
+```php  
+ public function map(callable $callback)
+    {
+        $keys = array_keys($this->items);
+
+        $items = array_map($callback, $this->items, $keys);
+
+        return new static(array_combine($keys, $items));
+    }
+```  
+flatten方法，把数组搞成一维的
+```php  
+public static function flatten($array, $depth = INF)
+    {
+        $result = [];
+
+        foreach ($array as $item) {
+            $item = $item instanceof Collection ? $item->all() : $item;
+
+            if (! is_array($item)) {
+                $result[] = $item;
+            } else {
+                $values = $depth === 1
+                    ? array_values($item)
+                    : static::flatten($item, $depth - 1);
+
+                foreach ($values as $value) {
+                    $result[] = $value;
+                }
+            }
+        }
+
+        return $result;
+    }
 ```

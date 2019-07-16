@@ -50,7 +50,9 @@ function forget(&$array, $keys)
 //
 //forget($a,'japanese.address.a');
 //print_r($a);
-mt_srand();
-echo mt_rand().PHP_EOL;
-echo mt_rand().PHP_EOL;
-echo mt_rand().PHP_EOL;
+//mt_srand();
+//echo mt_rand().PHP_EOL;
+//echo mt_rand().PHP_EOL;
+//echo mt_rand().PHP_EOL;
+
+print_r(preg_split('/\s+as\s+/i', " name as bname"));
