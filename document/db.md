@@ -1260,7 +1260,646 @@
     输出结果  
     ![db2](images/db5.png)  
     
-    以上我们完成了DB的流程说明和它的使用规则  
+    以上我们完成了DB的流程说明和它的使用规则    
+    
+    
+- 模型流程  
+    我们就拿它默认给我们生的User.php类文件【当然许多人会特点喜欢分Model层，非要建一个Model目录，Controller目录】  
+    然后还嫌不够，要建一堆Service,Logic一堆所谓的分层，即逻辑层，服务层【说话简单点，做事简单点，别搞太多的套路^_^】  
+    开玩笑的  
+    
+    ```php  
+    namespace Illuminate\Foundation\Auth;
+    
+    use Illuminate\Auth\Authenticatable;
+    use Illuminate\Auth\MustVerifyEmail;
+    use Illuminate\Database\Eloquent\Model;
+    use Illuminate\Auth\Passwords\CanResetPassword;
+    use Illuminate\Foundation\Auth\Access\Authorizable;
+    use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+    use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
+    use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
+    
+    class User extends Model implements
+        AuthenticatableContract,
+        AuthorizableContract,
+        CanResetPasswordContract
+    {
+        use Authenticatable, Authorizable, CanResetPassword, MustVerifyEmail;
+    }
+
+    ```  
+    
+    下面是我用php artisan make:model Test创建的模型【此命令原理后面我们会说到】  
+    ```php  
+    namespace App;
+    
+    use Illuminate\Database\Eloquent\Model;
+    
+    class Test extends Model
+    {
+        //
+    }
+
+    ```  
+    
+    我的测试源码  
+    ```php  
+     $test = new Test();
+     $data = $test->all();
+
+     return view("admin.index",compact('data'));
+    ```  
+    
+    就这么简单  
+    [Model鸡类](Model.md)  
+    实现化过程： 
+    ```php  
+    public function __construct(array $attributes = [])
+        {
+            //也是废的
+            $this->bootIfNotBooted();
+            //废的
+            $this->initializeTraits();
+            /**
+              public function syncOriginal()
+                {
+                    $this->original = $this->attributes;
+            
+                    return $this;
+                }
+            **/
+            $this->syncOriginal();
+    
+            $this->fill($attributes);
+        }
+        
+    protected function bootIfNotBooted()
+        {
+            if (! isset(static::$booted[static::class])) {
+                static::$booted[static::class] = true;
+                //目前它真没有什么吊用【虽然每次实例化模型类的时候，它都运行，简直是丧尽天量，浪费时间】
+                //后面我们说到调度器的时候来看看它你就更多加清楚了，现在我们放过
+                $this->fireModelEvent('booting', false);
+    
+                static::boot();
+    
+                $this->fireModelEvent('booted', false);
+            }
+        }
+        
+    protected function fireModelEvent($event, $halt = true)
+        {
+        //事件调度器
+            if (! isset(static::$dispatcher)) {
+                return true;
+            }
+            $method = $halt ? 'until' : 'dispatch';
+    
+            $result = $this->filterModelEventResults(
+                $this->fireCustomModelEvent($event, $method)
+            );
+            //此时$result=null
+            if ($result === false) {
+                return false;
+            }
+            //调度器->dispatch("eloquentbooting: App\\Test", $this)
+            return ! empty($result) ? $result : static::$dispatcher->{$method}(
+                "eloquent.{$event}: ".static::class, $this
+            );
+        }
+        
+    protected function fireCustomModelEvent($event, $method)
+        {
+        //直接返回
+            if (! isset($this->dispatchesEvents[$event])) {
+                return;
+            }
+    
+            $result = static::$dispatcher->$method(new $this->dispatchesEvents[$event]($this));
+    
+            if (! is_null($result)) {
+                return $result;
+            }
+        }
+        
+    protected static function boot()
+        {
+            static::bootTraits();
+        }
+    //现在它真没有吊用【完全是在装逼】
+    protected static function bootTraits()
+        {
+            $class = static::class;
+    
+            $booted = [];
+    
+            static::$traitInitializers[$class] = [];
+            //得到这个类的所有类【包括所有子类，父类全返回】
+            foreach (class_uses_recursive($class) as $trait) {
+            //取得子类名称拼装方法
+            
+                $method = 'boot'.class_basename($trait);
+    
+                //此类存在指定方法则运行
+                if (method_exists($class, $method) && ! in_array($method, $booted)) {
+                //https://www.php.net/manual/zh/function.forward-static-call.php
+                //调用类的静态方法
+                    forward_static_call([$class, $method]);
+    
+                    $booted[] = $method;
+                }
+                //或是子类存在initializeXXX方法也运行
+                if (method_exists($class, $method = 'initialize'.class_basename($trait))) {
+                    static::$traitInitializers[$class][] = $method;
+    
+                    static::$traitInitializers[$class] = array_unique(
+                        static::$traitInitializers[$class]
+                    );
+                }
+            }
+        }
+        
+        
+    public function fill(array $attributes)
+        {
+        //true
+            $totallyGuarded = $this->totallyGuarded();
+    
+    //$this->fillableFromArray($attributes)直接 原样返回
+            foreach ($this->fillableFromArray($attributes) as $key => $value) {
+                $key = $this->removeTableFromKey($key);
+                //原样得到key
+                //指定$key存在于fillable数组中，或是ungrarded为真值或是fillable为空且没有_符号开头返回true,如果存在于guarded或是它为*号
+                //就是fillable存在或是它为空且你的属性字段没_线就能设置  
+                //guarded设置了就不能设置了
+                if ($this->isFillable($key)) {
+                    $this->setAttribute($key, $value);
+                } elseif ($totallyGuarded) {
+                    throw new MassAssignmentException(sprintf(
+                        'Add [%s] to fillable property to allow mass assignment on [%s].',
+                        $key, get_class($this)
+                    ));
+                }
+            }
+    
+            return $this;
+        }
+        
+    public function totallyGuarded()
+        {
+            return count($this->getFillable()) === 0 && $this->getGuarded() == ['*'];
+        }
+        
+    public function getFillable()
+        {
+        //默认是空的
+            return $this->fillable;
+        }
+        
+    public function getGuarded()
+        {
+        //默认['*']
+            return $this->guarded;
+        }
+        
+    protected function fillableFromArray(array $attributes)
+        {
+        
+            if (count($this->getFillable()) > 0 && ! static::$unguarded) {
+                return array_intersect_key($attributes, array_flip($this->getFillable()));
+            }
+    
+            return $attributes;
+        }
+        
+    protected function removeTableFromKey($key)
+        {   //key含有.符号直接获取最后一个，否则原样返回
+            return Str::contains($key, '.') ? last(explode('.', $key)) : $key;
+        }
+        
+    public function isFillable($key)判断是否能填充【指定$key存在于fillable数组中，或是ungrarded为真值或是fillable为空且没有_符号开头返回true,如果存在于guarded或是它为*号】
+        {
+            if (static::$unguarded) {
+                return true;
+            }
+            
+            if (in_array($key, $this->getFillable())) {
+                return true;
+            }
+            
+            if ($this->isGuarded($key)) {
+                return false;
+            }
+    
+            return empty($this->getFillable()) &&
+                ! Str::startsWith($key, '_');
+        }
+        
+    public function isGuarded($key)
+        {
+        //$guarded验证此参数是否有值
+            return in_array($key, $this->getGuarded()) || $this->getGuarded() == ['*'];
+        }
+        
+    保存属性 
+    public function setAttribute($key, $value)
+        {
+        //存在set.$keyAttrbute方法的话就用它的方法
+            if ($this->hasSetMutator($key)) {
+            /
+                return $this->setMutatedAttributeValue($key, $value);
+            }
+            //检测用户设置的字段是否是日期时间字段
+            elseif ($value && $this->isDateAttribute($key)) {
+                $value = $this->fromDateTime($value);
+            }
+            //暂时不管
+            if ($this->isJsonCastable($key) && ! is_null($value)) {
+                $value = $this->castAttributeAsJson($key, $value);
+            }
+            if (Str::contains($key, '->')) {
+                return $this->fillJsonAttribute($key, $value);
+            }
+            //存储属性字段
+            $this->attributes[$key] = $value;
+    
+            return $this;
+        }
+    protected function setMutatedAttributeValue($key, $value)属性方法运行
+        {
+            return $this->{'set'.Str::studly($key).'Attribute'}($value);
+        }
+        
+    public function hasSetMutator($key)
+        {
+        //Str::studly($key)转换首字母为大写
+            return method_exists($this, 'set'.Str::studly($key).'Attribute');
+        }
+        
+    protected function isDateAttribute($key)
+        {
+            return in_array($key, $this->getDates()) ||
+                                        $this->isDateCastable($key);
+        }
+        
+    public function getDates()
+        {
+        //取得子模型设置的内容
+            $defaults = [static::CREATED_AT, static::UPDATED_AT];
+            
+            return $this->usesTimestamps()//返回true
+                        ? array_unique(array_merge($this->dates, $defaults))
+                        : $this->dates;
+        }
+        
+    public function usesTimestamps()
+        {
+            return $this->timestamps;
+        }
+    ```    
+    
+    [helpers函数说明](helpers.md)    
+    
+    ```php  
+    $test = new Test(['age'=>100,'name'=>'jack']);
+    $data = $test->save();  
+    
+    class Test extends Model
+    {
+        //
+        public $table = "test";
+        public $fillable = ['name','age'];
+        public $guarded = ['*'];
+    }
+    ```  
+    就是这么回事，存储如下    
+    ![test](images/test.png)     
+    
+    现在我们看一下它的save方法操作流程  
+    ```php  
+    public function save(array $options = [])
+        {
+        //返回Illuminate\Database\Eloquent\Builder模型构建器【内置查询构建器】   
+            $query = $this->newModelQuery();
+            
+            //暂时不管它
+            if ($this->fireModelEvent('saving') === false) {
+                return false;
+            }
+    
+            //过，不要
+            if ($this->exists) {
+                $saved = $this->isDirty() ?
+                            $this->performUpdate($query) : true;
+            }
+    
+            else {
+            
+                $saved = $this->performInsert($query);
+    
+                if (! $this->getConnectionName() &&
+                    $connection = $query->getConnection()) {
+                    $this->setConnection($connection->getName());
+                }
+            }
+    
+            if ($saved) {
+                $this->finishSave($options);
+            }
+    
+            return $saved;
+        }
+        
+    public function newModelQuery()
+        {
+        //返回Illuminate\Database\Eloquent\Builder模型构建器实例
+            return $this->newEloquentBuilder(
+            //Builder构建器【具体看前面的注解，已经说过了】
+                $this->newBaseQueryBuilder()
+            )->setModel($this);
+        }
+        
+    protected function newBaseQueryBuilder()
+        {
+        //得到MysqlConnection对象并调用query返回Builder构建器
+            return $this->getConnection()->query();
+        }
+        
+    public function getConnection()
+        {
+            return static::resolveConnection($this->getConnectionName());
+        }
+        
+    public function getConnectionName()
+        {
+            return $this->connection;
+        }
+    public static function resolveConnection($connection = null)
+        {
+        //static::$resolve 数据库服务提供类在运行的时候注册了【忘记了可以看前面的注解】
+        //这里的连接流程【就是DB实现的整个过程】，不在重复说明 
+        //返回MysqlConnection实例
+            return static::$resolver->connection($connection);
+        }  
+        
+    public function newEloquentBuilder($query)
+        {
+            return new Builder($query);
+        }
+    ```  
+    Illuminate\Database\Eloquent\Builder模型构建器【内置查询构建器】   
+    ```php  
+    namespace Illuminate\Database\Eloquent;
+    
+    use Closure;
+    use Exception;
+    use BadMethodCallException;
+    use Illuminate\Support\Arr;
+    use Illuminate\Support\Str;
+    use Illuminate\Pagination\Paginator;
+    use Illuminate\Contracts\Support\Arrayable;
+    use Illuminate\Support\Traits\ForwardsCalls;
+    use Illuminate\Database\Concerns\BuildsQueries;
+    use Illuminate\Database\Eloquent\Relations\Relation;
+    use Illuminate\Database\Query\Builder as QueryBuilder;
+    
+    /**
+     * @property-read HigherOrderBuilderProxy $orWhere
+     *
+     * @mixin \Illuminate\Database\Query\Builder
+     */
+    class Builder
+    {
+        use BuildsQueries, Concerns\QueriesRelationships, ForwardsCalls;
+        }  
+        
+        
+    public function setModel(Model $model)
+        {
+            $this->model = $model;
+            //查询构建器 query
+            $this->query->from($model->getTable());
+    
+            return $this;
+        }
+    ```  
+    Model->getTable()获取表名方法   
+    ```php  
+    public function getTable()
+        {
+        //设置table了没有【子模型】，否则就自动获取当前实例化的子模型并取得类名
+            return $this->table ?? Str::snake(Str::pluralStudly(class_basename($this)));
+        }
+    ```  
+    
+    Model->performInsert方法   
+    ```php  
+    protected function performInsert(Builder $query)
+        {
+        //过
+            if ($this->fireModelEvent('creating') === false) {
+                return false;
+            }
+            
+            if ($this->usesTimestamps()) {
+                $this->updateTimestamps();
+            }
+            //获取数据
+            $attributes = $this->getAttributes();
+            //返回true 属于自动增长的插入
+            if ($this->getIncrementing()) {
+                $this->insertAndSetId($query, $attributes);
+            }
+    
+            else {
+                if (empty($attributes)) {
+                    return true;
+                }
+    
+                $query->insert($attributes);
+            }
+    
+            $this->exists = true;
+    
+            $this->wasRecentlyCreated = true;
+    
+            $this->fireModelEvent('created', false);
+    
+            return true;
+        }
+    //模型构建器，数据内容
+    protected function insertAndSetId(Builder $query, $attributes)
+        {
+        //$keyName = $this->getKeyName() 得到子模型的主键名称
+        //$query->insertGetId此时将触发魔术方法【并返回查询构造器】   
+            $id = $query->insertGetId($attributes, $keyName = $this->getKeyName());
+    
+            $this->setAttribute($keyName, $id);
+        }
+    ```  
+    Illuminate\Database\Query\Builder->insertGetId()方法   
+    ```php  
+    public function insertGetId(array $values, $sequence = null)
+        {
+        //SQL语法器构建sql
+            $sql = $this->grammar->compileInsertGetId($this, $values, $sequence);
+    
+            $values = $this->cleanBindings($values);
+    
+            return $this->processor->processInsertGetId($this, $sql, $values, $sequence);
+        }  
+        
+    
+    ```  
+    Illuminate\Database\Query\Processors\Processor->processInsertGetId()方法  
+    ```php  
+    //
+    public function processInsertGetId(Builder $query, $sql, $values, $sequence = null)
+        {
+        //查询构建器返回MysqlConnection实例直接进行插入操作
+            $query->getConnection()->insert($sql, $values);
+            //返回插入的id并返回
+            $id = $query->getConnection()->getPdo()->lastInsertId($sequence);
+    
+            return is_numeric($id) ? (int) $id : $id;
+        }
+    ```  
+    
+    模型查询构建器魔术方法  
+    ```php  
+    public function __call($method, $parameters)
+        {
+            if ($method === 'macro') {
+                $this->localMacros[$parameters[0]] = $parameters[1];
+    
+                return;
+            }
+    
+            if (isset($this->localMacros[$method])) {
+                array_unshift($parameters, $this);
+    
+                return $this->localMacros[$method](...$parameters);
+            }
+    
+            if (isset(static::$macros[$method])) {
+                if (static::$macros[$method] instanceof Closure) {
+                    return call_user_func_array(static::$macros[$method]->bindTo($this, static::class), $parameters);
+                }
+    
+                return call_user_func_array(static::$macros[$method], $parameters);
+            }
+    
+            if (method_exists($this->model, $scope = 'scope'.ucfirst($method))) {
+                return $this->callScope([$this->model, $scope], $parameters);
+            }
+    
+    /**
+    protected $passthru = [
+            'insert', 'insertGetId', 'getBindings', 'toSql', 'dump', 'dd',
+            'exists', 'doesntExist', 'count', 'min', 'max', 'avg', 'average', 'sum', 'getConnection',
+        ];
+    **/
+            if (in_array($method, $this->passthru)) {
+                return $this->toBase()->{$method}(...$parameters);
+            }
+    
+            $this->forwardCallTo($this->query, $method, $parameters);
+    
+            return $this;
+        }
+    ```
+    
+    总结流程【save方法】    
+    ```php  
+    
+    
+    第一步：实例化模型构建器  
+    $query = $this->newModelQuery();
+    public function newModelQuery()
+        {
+        //返回模型构建器
+            return $this->newEloquentBuilder(
+                $this->newBaseQueryBuilder()//查询建构器
+            )->setModel($this);//将当前运行模型保存在查询构建器里
+        }  
+        
+    第二步：插入操作  
+    $this->insertAndSetId($query, $attributes);  
+    protected function insertAndSetId(Builder $query, $attributes)
+        {
+        //模型构建器转换为查询构建器
+            $id = $query->insertGetId($attributes, $keyName = $this->getKeyName());
+    
+            $this->setAttribute($keyName, $id);
+        }
+    模型构建器转换为查询构建器【经过魔术方法转换】     
+    
+    第三步：使用查询构建器  
+    public function insertGetId(array $values, $sequence = null)
+        {
+        //生成sql
+            $sql = $this->grammar->compileInsertGetId($this, $values, $sequence);
+    
+            $values = $this->cleanBindings($values);
+    
+        //处理器执行插入
+            return $this->processor->processInsertGetId($this, $sql, $values, $sequence);
+        }
+    public function processInsertGetId(Builder $query, $sql, $values, $sequence = null)
+        {
+        //查询构建器获取连接MysqlConnection
+            $query->getConnection()->insert($sql, $values);
+    
+            $id = $query->getConnection()->getPdo()->lastInsertId($sequence);
+    
+            return is_numeric($id) ? (int) $id : $id;
+        }
+        
+    MysqlConnection->insert()  
+    
+    public function insert($query, $bindings = [])
+        {
+            return $this->statement($query, $bindings);
+        }  
+        
+    第四步：使用原生PDO执行SQL  
+    public function statement($query, $bindings = [])
+        {
+            return $this->run($query, $bindings, function ($query, $bindings) {
+                if ($this->pretending()) {
+                    return true;
+                }
+                //PDO
+                $statement = $this->getPdo()->prepare($query);
+    
+                $this->bindValues($statement, $this->prepareBindings($bindings));
+    
+                $this->recordsHaveBeenModified();
+                //执行SQL
+                return $statement->execute();
+            });
+        }  
+        
+    ```  
+    
+    前面说过DB它运行时返回MysqlConnection实例，基于此实例你就可以进行插入，删除，查询，修改操作了  
+    执行时它会返回PDO原生对象执行sql   
+    
+    当使用DB::table()方法它是返回查询构建器Builder的，你可以使用它提供的方法填写参数，然后再执行插入，删除，修改，获取   
+    的时候它内置的SQL语法生成器会生SQL【帮你】，它再调用MysqlConnection执行SQL的  
+    
+    而当你使用模型时，它会使用模型构建器，但是当真正的进行插入，删除，修改，查询操作时它会使用查询构建器来处理  
+    
+    基于以上说明：模型构建器，查询构建器，SQL【Grammar语法生成器】只是为你生成SQL【花费时间】然后再调用MysqlConnection  
+    执行生成的SQL语句   
+    
+    自此数据库的基本操作就是这样了  
+    
+    MysqlConnection->insert/delete/select/update(sql)  
+    sql的生成由Grammar语法器生成，生成的数据来源于查询构建器Builder
+    
+   
     
      
      

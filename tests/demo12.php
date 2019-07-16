@@ -55,4 +55,6 @@ function forget(&$array, $keys)
 //echo mt_rand().PHP_EOL;
 //echo mt_rand().PHP_EOL;
 
-print_r(preg_split('/\s+as\s+/i', " name as bname"));
+//print_r(preg_split('/\s+as\s+/i', " name as bname"));
+//echo basename(str_replace('\\', '/', "Illuminate\\Database\\Test"));
+echo \Illuminate\Support\Str::studly('china');

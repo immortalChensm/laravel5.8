@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Test;
 use App\User;
 use Illuminate\Database\Connectors\ConnectionFactory;
 use Illuminate\Database\Connectors\MySqlConnector;
@@ -18,7 +19,7 @@ use Symfony\Component\Routing\RouteCollection;
 class TestController extends Controller
 {
     //
-    function index(Request $request,User $user)
+    function index(Request $request)
     {
 //        $data = DB::table("test")->get();
 //        /**@var RouteCollection */
@@ -61,6 +62,10 @@ class TestController extends Controller
 //            ->max("age");
 //
 //        $data = $connection->select($builder->toSql());
+
+        $test = new Test(['age'=>100,'name'=>'jack']);
+        $data = $test->save();
+
         return view("admin.index",compact('data'));
     }
 }

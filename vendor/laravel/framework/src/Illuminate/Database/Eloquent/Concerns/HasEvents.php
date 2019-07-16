@@ -179,6 +179,7 @@ trait HasEvents
         $result = $this->filterModelEventResults(
             $this->fireCustomModelEvent($event, $method)
         );
+        $b = $result;
 
         if ($result === false) {
             return false;
