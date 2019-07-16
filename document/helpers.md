@@ -53,5 +53,20 @@ function class_basename($class)
         $class = is_object($class) ? get_class($class) : $class;
 
         return basename(str_replace('\\', '/', $class));
+    } 
+```  
+
+view()函数  
+```php  
+function view($view = null, $data = [], $mergeData = [])
+    {
+    //这个怎么来的，自己去看前面的说明
+        $factory = app(ViewFactory::class);
+
+        if (func_num_args() === 0) {
+            return $factory;
+        }
+
+        return $factory->make($view, $data, $mergeData);
     }
-```
+```  

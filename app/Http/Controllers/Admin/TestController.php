@@ -21,7 +21,7 @@ class TestController extends Controller
     //
     function index(Request $request)
     {
-//        $data = DB::table("test")->get();
+        $data = DB::table("test")->get();
 //        /**@var RouteCollection */
 //       //print_r(app('routes')->get(app('request')->getMethod()));
 //        /** @var Request */
@@ -63,8 +63,9 @@ class TestController extends Controller
 //
 //        $data = $connection->select($builder->toSql());
 
-        $test = new Test(['age'=>100,'name'=>'jack']);
-        $data = $test->save();
+        //$test = new Test(['age'=>100,'name'=>'jack']);
+        //$data = $test->save();
+
 
         return view("admin.index",compact('data'));
     }

@@ -174,7 +174,80 @@ bindings=[
     'Illuminate\Contracts\Queue\EntityResolver'=>'function () {
     Illuminate\Database\Eloquent\QueueEntityResolver
                                                               return new QueueEntityResolver;
-                                                          }',                                                                    
+                                                          }',   
+                     
+    //view服务提供类注册【运行时自动保存】                                       
+    'view'=>'function ($app) {
+                         // Next we need to grab the engine resolver instance that will be used by the
+                         // environment. The resolver will be used by an environment to get each of
+                         // the various engine implementations such as plain PHP or Blade engine.
+                         $resolver = $app['view.engine.resolver'];
+             
+                         $finder = $app['view.finder'];
+                         /**
+                          protected function createFactory($resolver, $finder, $events)
+                             {
+                             //Illuminate\View\Factory
+                                 return new Factory($resolver, $finder, $events);
+                             }
+                         **/
+                         $factory = $this->createFactory($resolver, $finder, $app['events']);
+             
+                         // We will also set the container instance on this view environment since the
+                         // view composers may be classes registered in the container, which allows
+                         // for great testable, flexible composers for the application developer.
+                         $factory->setContainer($app);
+             
+                         $factory->share('app', $app);
+             
+                         return $factory;
+                     }',   
+                     
+    'view.finder'=>'function ($app) {
+    \\Illuminate\View
+                                return new FileViewFinder($app['files'], $app['config']['view.paths']);
+                            }',    
+                            
+    'view.engine.resolver'=>'function () {
+    \\Illuminate\View
+                                         $resolver = new EngineResolver;
+                             
+                                         foreach (['file', 'php', 'blade'] as $engine) {
+                                             $this->{'register'.ucfirst($engine).'Engine'}($resolver);
+                                         }
+                                         
+                                         /**
+                                             function registerFileEngine($resolver)
+                                             {
+                                                 $resolver->register('file', function () {
+                                                     return new FileEngine;
+                                                 });
+                                             }
+                                         
+                                             function registerPhpEngine($resolver)
+                                             {
+                                                 $resolver->register('php', function () {
+                                                     return new PhpEngine;
+                                                 });
+                                             }
+                                         
+                                             function registerBladeEngine($resolver)
+                                             {
+                                                
+                                                 $this->app->singleton('blade.compiler', function () {
+                                                     return new BladeCompiler(
+                                                         $this->app['files'], $this->app['config']['view.compiled']
+                                                     );
+                                                 });
+                                         
+                                                 $resolver->register('blade', function () {
+                                                     return new CompilerEngine($this->app['blade.compiler']);
+                                                 });
+                                             }
+                                         **/
+                             
+                                         return $resolver;
+                                     }',                                                                                                                           
                                                                                                                                               
                                                                                                                                            
                                                                                                                                                

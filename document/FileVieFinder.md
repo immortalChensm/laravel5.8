@@ -1,3 +1,5 @@
+###Illuminate\View\FileViewFinder  
+```php  
 <?php
 
 namespace Illuminate\View;
@@ -50,10 +52,11 @@ class FileViewFinder implements ViewFinderInterface
      * @param  array|null  $extensions
      * @return void
      */
+     //$app['files'], $app['config']['view.paths']
     public function __construct(Filesystem $files, array $paths, array $extensions = null)
     {
-        $this->files = $files;
-        $this->paths = array_map([$this, 'resolvePath'], $paths);
+        $this->files = $files;//文件系统
+        $this->paths = array_map([$this, 'resolvePath'], $paths);//视图路径
 
         if (isset($extensions)) {
             $this->extensions = $extensions;
@@ -71,7 +74,7 @@ class FileViewFinder implements ViewFinderInterface
         if (isset($this->views[$name])) {
             return $this->views[$name];
         }
-        $b = $this->paths;
+
         if ($this->hasHintInformation($name = trim($name))) {
             return $this->views[$name] = $this->findNamespacedView($name);
         }
@@ -330,3 +333,8 @@ class FileViewFinder implements ViewFinderInterface
         return $this->extensions;
     }
 }
+
+```  
+
+运行时数据存储情况   
+![view](images/FileViewFinder.png)
