@@ -514,7 +514,7 @@ class Arr
         }
 
         $keys = explode('.', $key);
-
+        //city.address
         while (count($keys) > 1) {
             $key = array_shift($keys);
 

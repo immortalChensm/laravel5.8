@@ -61,41 +61,48 @@ except()方法
         return $array;
     }
 ```  
-forget()方法   
+forget()方法【删除数组指定索引，支持多维数组】
 ```php  
 public static function forget(&$array, $keys)
     {
+    //数组
         $original = &$array;
-
+//索引数组
         $keys = (array) $keys;
 
         if (count($keys) === 0) {
             return;
         }
-
+        //循环key数组
         foreach ($keys as $key) {
             // if the exact key exists in the top-level, remove it
+            //数组存在指定索引则删除数据元素
             if (static::exists($array, $key)) {
                 unset($array[$key]);
 
                 continue;
             }
-
+            //分割数组【除非这个key真的含有.符号】
             $parts = explode('.', $key);
 
             // clean up before each pass
             $array = &$original;
-
+            
             while (count($parts) > 1) {
+                //返回该数组的首个元素
                 $part = array_shift($parts);
-
+                //存在且是数组 
+                //则获取继续
+                //一般此处用于多维数组，一直获取到最后一个数组并覆盖
                 if (isset($array[$part]) && is_array($array[$part])) {
-                    $array = &$array[$part];
+                    $array = &$array[$part];//数据更新
                 } else {
                     continue 2;
                 }
             }
-
+            //删除数据
+            //此时$array可能是二级数组
+            //删除最后一级数组某个指定索引 
             unset($array[array_shift($parts)]);
         }
     }
@@ -124,5 +131,44 @@ public static function first($array, callable $callback = null, $default = null)
         }
 
         return value($default);
+    }
+```  
+add方法  【给数组添加新的数据元素】，支持.语法多维
+```php  
+public static function add($array, $key, $value)
+    {
+    //防止复制添加
+        if (is_null(static::get($array, $key))) {
+            static::set($array, $key, $value);
+        }
+
+        return $array;
+    }
+```  
+
+Wrap方法 【包装成数组】  
+```php  
+public static function wrap($value)
+    {
+        if (is_null($value)) {
+            return [];
+        }
+
+        return is_array($value) ? $value : [$value];
+    }
+```  
+shuffle混乱数组
+```php  
+ public static function shuffle($array, $seed = null)
+    {
+        if (is_null($seed)) {
+            shuffle($array);
+        } else {
+            mt_srand($seed);
+            shuffle($array);
+            mt_srand();
+        }
+
+        return $array;
     }
 ```

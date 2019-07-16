@@ -69,4 +69,15 @@ $includingMethod=2;
 //$test = test($routes,$callback);
 //echo $test;
 
-echo !is_null(null);
+//echo !is_null(null);
+$needles = ['::read', '::write'];
+$haystack = "read";
+//echo substr('::read', -strlen($haystack));
+foreach ((array) $needles as $needle) {
+
+//    if (substr($haystack, -strlen($needle)) === (string) $needle) {
+//        return true;
+//    }
+    //echo substr($haystack, -strlen($needle));
+}
+ print_r(explode('::', "read::write", 2));

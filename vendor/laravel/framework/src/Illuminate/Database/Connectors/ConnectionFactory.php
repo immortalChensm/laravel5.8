@@ -265,6 +265,7 @@ class ConnectionFactory
      */
     protected function createConnection($driver, $connection, $database, $prefix = '', array $config = [])
     {
+        // $config['driver'], $pdo, $config['database'], $config['prefix'], $config
         if ($resolver = Connection::getResolver($driver)) {
             return $resolver($connection, $database, $prefix, $config);
         }
