@@ -14,6 +14,10 @@
 //Route::get('/', function () {
 //    return view('welcome');
 //});
+Route::middleware('auth')->namespace('Admin')->prefix('admin')->group(function (){
 
-Route::get('/test/{users}', "Admin\TestController@index");
+    Route::any('/testb', "Admin\TestController@index");
+    Route::get('/testa/{name}/{age?}', "Admin\TestController@index")->name();
+});
+
 

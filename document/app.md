@@ -1,4 +1,4 @@
-Application类的数据存储  
+Application运行时类的数据存储情况  
 ```php  
 instances=[
     'path'=>'app',
@@ -41,6 +41,17 @@ reboundCallbacks=[
     'routes'=>'function ($app, $routes) {
                                $app['url']->setRoutes($routes);
                            }',                  
+]
+
+afterResolvingCallbacks = [
+    Illuminate\Contracts\Validation\ValidatesWhenResolved=>function ($resolved) {
+                                                                       $resolved->validateResolved();
+                                                                   },
+    Illuminate\Foundation\Http\FormRequest=>function ($request, $app) {
+                                                        $request = FormRequest::createFrom($app['request'], $request);
+                                            
+                                                        $request->setContainer($app)->setRedirector($app->make(Redirector::class));
+                                                    }                                                               
 ]
 
 
@@ -601,4 +612,72 @@ protected $groupStack = [
 ];
 
 public static $verbs = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
-```
+```  
+
+![app1](images/app1.png)
+![app1](images/app2.png)
+![app1](images/app3.png)
+![app1](images/app4.png)
+![app1](images/app5.png)
+![app1](images/app6.png)
+![app1](images/app7.png)
+![app1](images/app8.png)
+![app1](images/app9.png)
+![app1](images/app10.png)
+![app1](images/app11.png)
+![app1](images/app12.png)
+![app1](images/app13.png)
+![app1](images/app14.png)
+![app1](images/app15.png)
+![app1](images/app16.png)
+![app1](images/app17.png)
+![app1](images/app18.png)
+![app1](images/app19.png)    
+
+abstractAliases  
+![app1](images/aliases1.png)  
+![app1](images/aliases2.png)  
+![app1](images/aliases3.png)  
+![app1](images/aliases4.png)  
+![app1](images/aliases5.png)  
+![app1](images/aliases6.png)  
+![app1](images/aliases7.png)    
+
+实例池里的部分数据
+instances[]  
+config  
+![app1](images/instances/config1.png) 
+![app1](images/instances/config2.png) 
+![app1](images/instances/config3.png) 
+![app1](images/instances/config4.png) 
+![app1](images/instances/config5.png) 
+![app1](images/instances/config6.png) 
+![app1](images/instances/config7.png) 
+![app1](images/instances/config8.png) 
+![app1](images/instances/config9.png) 
+![app1](images/instances/config10.png) 
+![app1](images/instances/config11.png) 
+![app1](images/instances/config12.png) 
+![app1](images/instances/config13.png) 
+
+events  
+![app1](images/instances/events.png)   
+
+PackageManifest  
+![app1](images/instances/PackageManifest.png)    
+
+request   
+![app1](images/instances/request1.png) 
+![app1](images/instances/request2.png)   
+
+routers  
+![app1](images/instances/router1.png) 
+![app1](images/instances/router2.png)   
+
+routes  
+![app1](images/instances/routes_a_1.png) 
+![app1](images/instances/routes_a_2.png) 
+![app1](images/instances/routes_a_3.png) 
+![app1](images/instances/routes_a_4.png) 
+![app1](images/instances/routes_a_5.png) 
+
