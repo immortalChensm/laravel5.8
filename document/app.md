@@ -47,11 +47,15 @@ afterResolvingCallbacks = [
     Illuminate\Contracts\Validation\ValidatesWhenResolved=>function ($resolved) {
                                                                        $resolved->validateResolved();
                                                                    },
+                                                              
+]
+//在FormRequestServiceProviders服务类运行时完成的
+resolvingCallbacks = [
     Illuminate\Foundation\Http\FormRequest=>function ($request, $app) {
                                                         $request = FormRequest::createFrom($app['request'], $request);
                                             
                                                         $request->setContainer($app)->setRedirector($app->make(Redirector::class));
-                                                    }                                                               
+                                                    }     
 ]
 
 
