@@ -57,4 +57,9 @@ function forget(&$array, $keys)
 
 //print_r(preg_split('/\s+as\s+/i', " name as bname"));
 //echo basename(str_replace('\\', '/', "Illuminate\\Database\\Test"));
-echo \Illuminate\Support\Str::studly('china');
+//echo \Illuminate\Support\Str::studly('china');
+
+$view = new \Illuminate\View\View();
+
+//echo is_array($view);
+echo $view instanceof \Illuminate\Contracts\Support\Renderable;

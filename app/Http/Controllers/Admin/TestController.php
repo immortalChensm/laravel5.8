@@ -13,6 +13,7 @@ use Illuminate\Database\Schema\MySqlBuilder;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Routing\RouteCollection;
 
@@ -66,6 +67,7 @@ class TestController extends Controller
         //$test = new Test(['age'=>100,'name'=>'jack']);
         //$data = $test->save();
 
+        $data = new Collection([]);
 
         return view("admin.index",compact('data'));
     }

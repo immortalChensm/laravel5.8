@@ -737,6 +737,8 @@ class Router implements RegistrarContract, BindingRegistrar
             $response = $response->toResponse($request);
         }
 
+        $a = $response;
+        
         if ($response instanceof PsrResponseInterface) {
             $response = (new HttpFoundationFactory)->createResponse($response);
         } elseif ($response instanceof Model && $response->wasRecentlyCreated) {
