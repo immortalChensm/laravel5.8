@@ -272,7 +272,7 @@ class Validator implements ValidatorContract
         // the other error messages, returning true if we don't have messages.
         foreach ($this->rules as $attribute => $rules) {
             $attribute = str_replace('\.', '->', $attribute);
-
+            $b = $attribute;
             foreach ($rules as $rule) {
                 $this->validateAttribute($attribute, $rule);
 
@@ -620,7 +620,7 @@ class Validator implements ValidatorContract
         if (! $this->messages) {
             $this->passes();
         }
-
+        
         $this->messages->add($attribute, $this->makeReplacements(
             $this->getMessage($attribute, $rule), $attribute, $rule, $parameters
         ));

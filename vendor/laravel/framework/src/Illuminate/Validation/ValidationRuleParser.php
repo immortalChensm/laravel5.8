@@ -47,7 +47,7 @@ class ValidationRuleParser
         $this->implicitAttributes = [];
 
         $rules = $this->explodeRules($rules);
-
+        $a = $rules;
         return (object) [
             'rules' => $rules,
             'implicitAttributes' => $this->implicitAttributes,

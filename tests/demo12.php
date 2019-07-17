@@ -59,7 +59,17 @@ function forget(&$array, $keys)
 //echo basename(str_replace('\\', '/', "Illuminate\\Database\\Test"));
 //echo \Illuminate\Support\Str::studly('china');
 
-$view = new \Illuminate\View\View();
+//$view = new \Illuminate\View\View();
 
 //echo is_array($view);
-echo $view instanceof \Illuminate\Contracts\Support\Renderable;
+//echo $view instanceof \Illuminate\Contracts\Support\Renderable;
+
+foreach([1,2,3,4,5] as $k){
+    foreach([1,2,3] as $kk){
+        if ($kk==2){
+            break;
+        }else{
+            echo $k;
+        }
+    }
+}
