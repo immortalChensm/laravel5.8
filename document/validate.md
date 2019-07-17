@@ -227,7 +227,8 @@ class Request extends SymfonyRequest implements Arrayable, ArrayAccess{
            $this->resolvingCallbacks[$abstract][] = $callback;
        }
    }
- ```
+ ```  
+ ![app1](images/instances/resolving.png) 
  
  
  

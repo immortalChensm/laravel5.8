@@ -42,7 +42,7 @@ reboundCallbacks=[
                                $app['url']->setRoutes($routes);
                            }',                  
 ]
-
+//在FormRequestServiceProviders服务类运行时完成的
 afterResolvingCallbacks = [
     Illuminate\Contracts\Validation\ValidatesWhenResolved=>function ($resolved) {
                                                                        $resolved->validateResolved();
@@ -679,5 +679,8 @@ routes
 ![app1](images/instances/routes_a_2.png) 
 ![app1](images/instances/routes_a_3.png) 
 ![app1](images/instances/routes_a_4.png) 
-![app1](images/instances/routes_a_5.png) 
+![app1](images/instances/routes_a_5.png)   
+
+globalAfterResolvingCallbacks|afterResolvingCallbacks|globalResolvingCallbacks|resolvingCallbacks存储情况   
+![app1](images/instances/resolving.png) 
 
