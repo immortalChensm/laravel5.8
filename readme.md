@@ -11,10 +11,10 @@
 - **[App\Http\Kernel内核实例化的流程注解](document/web.md)【已完成】**
 - **[App\Http\Kernel的handle开车流程](document/handle.md)【已完成】**
 - **[App\Http\Kernel的路由加载【注册】流程](document/route.md)【已完成】**
-- **[App\Http\Kernel的路由调度(寻址)流程](document/dispatch.md)【已完成】**
-- **[数据库DB和模型类实现流程](document/db.md)【已完成】**
-- **[模板引擎实现流程](document/view.md)【已完成】**
-- **[验证实现流程](document/validate.md)【准备中】**
+- **[App\Http\Kernel的路由调度(寻址)流程---Controller](document/dispatch.md)【已完成】**
+- **[数据库DB和模型类实现流程---Model](document/db.md)【已完成】**
+- **[模板引擎实现流程---View](document/view.md)【已完成】**
+- **[验证实现流程---Validate](document/validate.md)【准备中】**
 - **[缓存实现流程](document/db.md)【准备中】**
 - **[session实现流程](document/db.md)【准备中】**
 - **[Auth实现流程](document/db.md)【准备中】**
