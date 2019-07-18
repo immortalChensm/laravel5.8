@@ -77,6 +77,7 @@ class Application extends SymfonyApplication implements ApplicationContract
      */
     public function run(InputInterface $input = null, OutputInterface $output = null)
     {
+
         $commandName = $this->getCommandName(
             $input = $input ?: new ArgvInput
         );

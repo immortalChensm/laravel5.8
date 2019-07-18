@@ -31,6 +31,18 @@ bootedCallbacks=>[
                               $this->app['router']->getRoutes()->refreshNameLookups();
                               $this->app['router']->getRoutes()->refreshActionLookups();
                           }',
+            console端运行时注册
+            'function () {
+                          $this->app->singleton(Schedule::class, function ($app) {
+                                     return (new Schedule($this->scheduleTimezone()))
+                                             ->useCache($this->scheduleCache());
+                         });
+                 
+                         $schedule = $this->app->make(Schedule::class);
+                 
+                         $this->schedule($schedule);
+                     }
+            '
 ]
 
 reboundCallbacks=[

@@ -42,6 +42,7 @@ class StreamOutput extends Output
      */
     public function __construct($stream, int $verbosity = self::VERBOSITY_NORMAL, bool $decorated = null, OutputFormatterInterface $formatter = null)
     {
+        //print_r(stream_get_meta_data($stream));
         if (!\is_resource($stream) || 'stream' !== get_resource_type($stream)) {
             throw new InvalidArgumentException('The StreamOutput class needs a stream as its first argument.');
         }
@@ -50,6 +51,7 @@ class StreamOutput extends Output
 
         if (null === $decorated) {
             $decorated = $this->hasColorSupport();
+            //echo "decorated:".$decorated;
         }
 
         parent::__construct($verbosity, $decorated, $formatter);
@@ -98,6 +100,7 @@ class StreamOutput extends Output
     protected function hasColorSupport()
     {
         if ('Hyper' === getenv('TERM_PROGRAM')) {
+           
             return true;
         }
 
@@ -107,13 +110,16 @@ class StreamOutput extends Output
                 || false !== getenv('ANSICON')
                 || 'ON' === getenv('ConEmuANSI')
                 || 'xterm' === getenv('TERM');
+
         }
 
         if (\function_exists('stream_isatty')) {
+
             return @stream_isatty($this->stream);
         }
 
         if (\function_exists('posix_isatty')) {
+
             return @posix_isatty($this->stream);
         }
 
