@@ -20,7 +20,7 @@
 - **[Auth实现流程](document/db.md)【准备中】**
 - **[事件实现流程](document/db.md)【准备中】**
 - **[队列实现流程](document/db.md)【准备中】**
-- **[console实现流程](document/db.md)【准备中】**
+- **[console实现流程](document/console.md)【】**
 
 
 
