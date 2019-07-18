@@ -15,5 +15,5 @@
 //    return view('welcome');
 //});
 
-Route::post('/test', "Admin\TestController@index");
+Route::get('/test', "Admin\TestController@index");
 

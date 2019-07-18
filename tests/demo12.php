@@ -64,12 +64,25 @@ function forget(&$array, $keys)
 //echo is_array($view);
 //echo $view instanceof \Illuminate\Contracts\Support\Renderable;
 
-foreach([1,2,3,4,5] as $k){
-    foreach([1,2,3] as $kk){
-        if ($kk==2){
-            break;
-        }else{
-            echo $k;
-        }
-    }
-}
+//foreach([1,2,3,4,5] as $k){
+//    foreach([1,2,3] as $kk){
+//        if ($kk==2){
+//            break;
+//        }else{
+//            echo $k;
+//        }
+//    }
+//}
+//$d1=new DateTime("2012-07-08 11:14:15.638276");
+//$d2=new DateTime("2012-07-06 11:14:15.889342");
+//$diff=$d2->diff($d1);
+//print_r( $diff ) ;
+//echo $diff instanceof DateInterval;
+$date = new DateTime('2000-01-01');
+$date->add(new DateInterval('P11Y'));
+echo $date->format('Y-m-d') . "\n";
+
+
+//echo \Illuminate\Support\Carbon::now()->add(new DateInterval('P11Y'));
+
+print_r(array_slice(str_split($hash = sha1("age"), 2), 0, 2));

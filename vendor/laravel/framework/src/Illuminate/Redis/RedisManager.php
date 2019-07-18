@@ -2,6 +2,7 @@
 
 namespace Illuminate\Redis;
 
+use Illuminate\Redis\Connections\PredisConnection;
 use InvalidArgumentException;
 use Illuminate\Contracts\Redis\Factory;
 use Illuminate\Redis\Connections\Connection;
@@ -58,8 +59,31 @@ class RedisManager implements Factory
     public function __construct($app, $driver, array $config)
     {
         $this->app = $app;
-        $this->driver = $driver;
-        $this->config = $config;
+        $this->driver = $driver;//predis
+        $this->config = $config;/*'redis' => [
+
+        'client' => env('REDIS_CLIENT', 'predis'),
+
+        'options' => [
+            'cluster' => env('REDIS_CLUSTER', 'predis'),
+            'prefix' => Str::slug(env('APP_NAME', 'laravel'), '_').'_database_',
+        ],
+
+        'default' => [
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'password' => env('REDIS_PASSWORD', null),
+            'port' => env('REDIS_PORT', 6379),
+            'database' => env('REDIS_DB', 0),
+        ],
+
+        'cache' => [
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'password' => env('REDIS_PASSWORD', null),
+            'port' => env('REDIS_PORT', 6379),
+            'database' => env('REDIS_CACHE_DB', 1),
+        ],
+
+    ],*/
     }
 
     /**
@@ -154,6 +178,7 @@ class RedisManager implements Factory
         switch ($this->driver) {
             case 'predis':
                 return new Connectors\PredisConnector;
+                //return new \Redis();
             case 'phpredis':
                 return new Connectors\PhpRedisConnector;
         }
@@ -224,6 +249,8 @@ class RedisManager implements Factory
      */
     public function __call($method, $parameters)
     {
+        //echo $this->connection() instanceof PredisConnection;
+        //echo $this->connection()->get("cache.car");
         return $this->connection()->{$method}(...$parameters);
     }
 }

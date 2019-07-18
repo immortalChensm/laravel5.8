@@ -22,7 +22,11 @@ class PredisConnector
             ['timeout' => 10.0], $options, Arr::pull($config, 'options', [])
         );
 
-        return new PredisConnection(new Client($config, $formattedOptions));
+        //return new PredisConnection(new Client($config, $formattedOptions));
+        $redis = new \Redis();
+        $redis->connect("127.0.0.1",6379);
+        $redis->auth("123456");
+        return new PredisConnection($redis);
     }
 
     /**

@@ -66,6 +66,29 @@ bindings=[
                            });
                        }',
                        
+    'redis'=>'function ($app) {
+                          $config = $app->make('config')->get('database.redis', []);
+              
+                          return new RedisManager($app, Arr::pull($config, 'client', 'predis'), $config);
+                      }',
+                      
+    'redis.connection'=>'function ($app) {
+                                     return $app['redis']->connection();
+                                 }',
+                       
+    'cache'=>'function ($app) {
+    //Illuminate\Cache\CacheManager 缓存管理器
+                          return new CacheManager($app);
+                      }',
+                      
+    'cache.store'=>'function ($app) {
+                                return $app['cache']->driver();
+                            }',
+                            
+    'memcached.connector'=>'function () {
+                                        return new MemcachedConnector;
+                                    }',
+                       
     'log'=>'function () {
                         return new LogManager($this->app);
                     }',  
