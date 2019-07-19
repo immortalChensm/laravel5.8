@@ -937,11 +937,64 @@
            }
    
            $this->runningCommand = $command;
+           //运行命令
            $exitCode = $this->doRunCommand($command, $input, $output);
            $this->runningCommand = null;
    
            return $exitCode;
        }
+       
+   protected function doRunCommand(Command $command, InputInterface $input, OutputInterface $output)
+       {
+           foreach ($command->getHelperSet() as $helper) {
+               if ($helper instanceof InputAwareInterface) {
+                   $helper->setInput($input);
+               }
+           }
+   
+           if (null === $this->dispatcher) {
+               return $command->run($input, $output);
+           }
+   
+           // bind before the console.command event, so the listeners have access to input options/arguments
+           try {
+               $command->mergeApplicationDefinition();
+               $input->bind($command->getDefinition());
+           } catch (ExceptionInterface $e) {
+               // ignore invalid options/arguments for now, to allow the event listeners to customize the InputDefinition
+           }
+   
+           $event = new ConsoleCommandEvent($command, $input, $output);
+           $e = null;
+   
+           try {
+               $this->dispatcher->dispatch($event, ConsoleEvents::COMMAND);
+   
+               if ($event->commandShouldRun()) {
+                   $exitCode = $command->run($input, $output);
+               } else {
+                   $exitCode = ConsoleCommandEvent::RETURN_CODE_DISABLED;
+               }
+           } catch (\Throwable $e) {
+               $event = new ConsoleErrorEvent($input, $output, $e, $command);
+               $this->dispatcher->dispatch($event, ConsoleEvents::ERROR);
+               $e = $event->getError();
+   
+               if (0 === $exitCode = $event->getExitCode()) {
+                   $e = null;
+               }
+           }
+   
+           $event = new ConsoleTerminateEvent($command, $input, $output, $exitCode);
+           $this->dispatcher->dispatch($event, ConsoleEvents::TERMINATE);
+   
+           if (null !== $e) {
+               throw $e;
+           }
+   
+           return $event->getExitCode();
+       }
+
        
    public function getDefinition()
        {
@@ -998,6 +1051,7 @@
    ```php  
    public function find($name)
        {
+       //添加list,help命令
            $this->init();
    
            $aliases = [];
@@ -1005,11 +1059,12 @@
            foreach ($this->commands as $command) {
                foreach ($command->getAliases() as $alias) {
                    if (!$this->has($alias)) {
+                   
                        $this->commands[$alias] = $command;
                    }
                }
            }
-   
+            //获取所有命令
            $allCommands = $this->commandLoader ? array_merge($this->commandLoader->getNames(), array_keys($this->commands)) : array_keys($this->commands);
            $expr = preg_replace_callback('{([^:]+|)}', function ($matches) { return preg_quote($matches[1]).'[^:]*'; }, $name);
            $commands = preg_grep('{^'.$expr.'}', $allCommands);
@@ -1072,6 +1127,28 @@
            }
    
            return $this->get($exact ? $name : reset($commands));
+       }
+       
+   public function get($name)
+       {
+           $this->init();
+   
+           if (!$this->has($name)) {
+               throw new CommandNotFoundException(sprintf('The command "%s" does not exist.', $name));
+           }
+            //取得命令返回
+           $command = $this->commands[$name];
+   
+           if ($this->wantHelps) {
+               $this->wantHelps = false;
+   
+               $helpCommand = $this->get('help');
+               $helpCommand->setCommand($command);
+   
+               return $helpCommand;
+           }
+   
+           return $command;
        }
 
    ```  
@@ -2178,6 +2255,218 @@ class ConsoleSupportServiceProvider extends AggregateServiceProvider implements 
        {
            static::$bootstrappers[] = $callback;
        }
-   ```
+   ```  
+   
+   Symfony\Component\Console\Command\Command 【简化了】  
+   运行命令Command->run()方法   
+   ```php  
+   public function run(InputInterface $input, OutputInterface $output)
+       {
+            //验证输入
+           $input->validate();
+           if ($this->code) {
+               $statusCode = ($this->code)($input, $output);
+           } else {
+           //运行子命令的execute
+               $statusCode = $this->execute($input, $output);
+           }
+           return is_numeric($statusCode) ? (int) $statusCode : 0;
+       }
+   ```  
+   Symfony\Component\Console\Command\ListCommand
+   ```php  
+   protected function execute(InputInterface $input, OutputInterface $output)
+       {
+           $helper = new DescriptorHelper();
+           $helper->describe($output, $this->getApplication(), [
+               'format' => $input->getOption('format'),
+               'raw_text' => $input->getOption('raw'),
+               'namespace' => $input->getArgument('namespace'),
+           ]);
+       }
+   ```  
+   Symfony\Component\Console\Helper\DescriptorHelper
+   ```php  
+   class DescriptorHelper extends Helper
+   {
+       /**
+        * @var DescriptorInterface[]
+        */
+       private $descriptors = [];
+   
+       public function __construct()
+       {
+           $this
+               ->register('txt', new TextDescriptor())
+               ->register('xml', new XmlDescriptor())
+               ->register('json', new JsonDescriptor())
+               ->register('md', new MarkdownDescriptor())
+           ;
+       }
+       
+      public function register($format, DescriptorInterface $descriptor)
+        {
+            $this->descriptors[$format] = $descriptor;
+    
+            return $this;
+        }
+        
+      public function describe(OutputInterface $output, $object, array $options = [])
+          {
+              $options = array_merge([
+                  'raw_text' => false,
+                  'format' => 'txt',
+              ], $options);
+      
+              if (!isset($this->descriptors[$options['format']])) {
+                  throw new InvalidArgumentException(sprintf('Unsupported format "%s".', $options['format']));
+              }
+               //要么是txt,xml,json,md【自己选】
+              $descriptor = $this->descriptors[$options['format']];
+              $descriptor->describe($output, $object, $options);
+          }
+    
+   Symfony\Component\Console\Descriptor\Descriptor->describe(OutputInterface $output, $object, array $options = [])
+       {
+           $this->output = $output;
+   
+           switch (true) {
+               case $object instanceof InputArgument:
+                   $this->describeInputArgument($object, $options);
+                   break;
+               case $object instanceof InputOption:
+                   $this->describeInputOption($object, $options);
+                   break;
+               case $object instanceof InputDefinition:
+                   $this->describeInputDefinition($object, $options);
+                   break;
+               case $object instanceof Command:
+                   $this->describeCommand($object, $options);
+                   break;
+               case $object instanceof Application:
+                   $this->describeApplication($object, $options);
+                   break;
+               default:
+                   throw new InvalidArgumentException(sprintf('Object of type "%s" is not describable.', \get_class($object)));
+           }
+       }
+   ```  
+   Symfony\Component\Console\Descriptor\TextDescriptor【以下列出所有命令并展示】   
+   Text命令描述器  
+   ```php  
+   protected function describeApplication(Application $application, array $options = [])
+       {
+           $describedNamespace = isset($options['namespace']) ? $options['namespace'] : null;
+           $description = new ApplicationDescription($application, $describedNamespace);
+   
+           if (isset($options['raw_text']) && $options['raw_text']) {
+               $width = $this->getColumnWidth($description->getCommands());
+   
+               foreach ($description->getCommands() as $command) {
+                   $this->writeText(sprintf("%-{$width}s %s", $command->getName(), $command->getDescription()), $options);
+                   $this->writeText("\n");
+               }
+           } else {
+               if ('' != $help = $application->getHelp()) {
+                   $this->writeText("$help\n\n", $options);
+               }
+   
+               $this->writeText("<comment>Usage:</comment>\n", $options);
+               $this->writeText("  command [options] [arguments]\n\n", $options);
+   
+               $this->describeInputDefinition(new InputDefinition($application->getDefinition()->getOptions()), $options);
+   
+               $this->writeText("\n");
+               $this->writeText("\n");
+   
+               $commands = $description->getCommands();
+               $namespaces = $description->getNamespaces();
+               if ($describedNamespace && $namespaces) {
+                   // make sure all alias commands are included when describing a specific namespace
+                   $describedNamespaceInfo = reset($namespaces);
+                   foreach ($describedNamespaceInfo['commands'] as $name) {
+                       $commands[$name] = $description->getCommand($name);
+                   }
+               }
+   
+               // calculate max. width based on available commands per namespace
+               $width = $this->getColumnWidth(array_merge(...array_values(array_map(function ($namespace) use ($commands) {
+                   return array_intersect($namespace['commands'], array_keys($commands));
+               }, $namespaces))));
+   
+               if ($describedNamespace) {
+                   $this->writeText(sprintf('<comment>Available commands for the "%s" namespace:</comment>', $describedNamespace), $options);
+               } else {
+                   $this->writeText('<comment>Available commands:</comment>', $options);
+               }
+   
+               foreach ($namespaces as $namespace) {
+                   $namespace['commands'] = array_filter($namespace['commands'], function ($name) use ($commands) {
+                       return isset($commands[$name]);
+                   });
+   
+                   if (!$namespace['commands']) {
+                       continue;
+                   }
+   
+                   if (!$describedNamespace && ApplicationDescription::GLOBAL_NAMESPACE !== $namespace['id']) {
+                       $this->writeText("\n");
+                       $this->writeText(' <comment>'.$namespace['id'].'</comment>', $options);
+                   }
+   
+                   foreach ($namespace['commands'] as $name) {
+                       $this->writeText("\n");
+                       $spacingWidth = $width - Helper::strlen($name);
+                       $command = $commands[$name];
+                       $commandAliases = $name === $command->getName() ? $this->getCommandAliasesText($command) : '';
+                       $this->writeText(sprintf('  <info>%s</info>%s%s', $name, str_repeat(' ', $spacingWidth), $commandAliases.$command->getDescription()), $options);
+                   }
+               }
+   
+               $this->writeText("\n");
+           }
+       }
+   ```  
+   
+   自此php artisan 或是php artisan list 命令就是运行ListCommand命令  
+   概括一下也简单【中间详细过程自己看了，对于我来说没有什么很大的价值】  
+   
+   1、控制台服务提供类注册命令保存在Application容器里
+   2、实例化SymfonyApplication并运行【实例化所有命令】并保存在命令池SymfonyApplication->commands【】 
+   3、根据输入命令名称从命令池里查找对应的命令   
+   4、运行命令Command->run方法  
+   5、执行子命令的execute方法   
+   
+   就这么几步，它依赖于Symfony Console组件来实现【本身也做了简单的封装，就是使用自己的服务提供类来添加命令】  
+   然后剩下的事情我们看具体命令要做的内容就行了   
+   
+   下面是laravel自己的扩展命令   
+   Illuminate\Routing\Console\ControllerMakeCommand【控制器创建命令类】  
+   Illuminate\Console\GeneratorCommand
+   Illuminate\Console\Command   
+   ```php  
+    public function run(InputInterface $input, OutputInterface $output)
+       {
+           $this->output = $this->laravel->make(
+               OutputStyle::class, ['input' => $input, 'output' => $output]
+           );
+            //Symfony\Component\Console\Command\Command
+           return parent::run(
+               $this->input = $input, $this->output
+           );
+       }
+
+       protected function execute(InputInterface $input, OutputInterface $output)
+       {
+           return $this->laravel->call([$this, 'handle']);
+       }
+   ```  
+   
+   laravel自己扩展的命令就是运行子命令的handle方法    
+   
+   所以每个命令是做什么的，具体去看各个子命令的handle方法即可  
+   
+   以上我大概简要的说明了流程就此结束console的注解了   
+   
    
    
