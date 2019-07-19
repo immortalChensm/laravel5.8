@@ -67,6 +67,8 @@ class TestController extends Controller
         $user->name = "jacl";
         $user->save();
 
+        print_r(app('events')->dispatch("装逼",request()));
+
         return response()->json(['a']);
 
     }

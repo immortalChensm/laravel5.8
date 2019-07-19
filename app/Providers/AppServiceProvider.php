@@ -16,6 +16,10 @@ class AppServiceProvider extends ServiceProvider
     public function register()
     {
         //
+        $this->app['events']->listen("装逼",function ($request){
+            echo "老子就是想装逼而已";
+            echo $request['name'];
+        });
     }
 
     /**

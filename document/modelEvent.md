@@ -18,6 +18,8 @@
         public function register()
         {
             //你可以在本类中做一些事件，如注册一些内容到容器中，然后你就可以在框架的任何地方取出来使用
+           
+            
         }
     
         /**
@@ -383,5 +385,33 @@
         }
     ```  
     
-    模型事件实现基于事件Dispatcher来实现的，注册和调度【把匿名函数扔数组里保存，再从数组里取现来运行】   
+    模型事件实现基于事件Dispatcher来实现的，注册和调度【把匿名函数扔数组里保存，再从数组里取现来运行】  
+    
+    可以在任何服务提供类添加如下代码   
+    XXXServiceProvider->register/boot   
+    ```php  
+      $this->app['events']->listen("装逼",function ($request){
+                            echo "老子就是想装逼而已";
+                            echo $request['name'];
+                        });
+                        
+    ```     
+    控制器内容   
+    ```php  
+    <?php
+    
+    namespace App\Http\Controllers\Admin;
+    use App\Http\Controllers\Controller;
+    class TestController extends Controller
+    {
+        function index()
+        {
+            print_r(app('events')->dispatch("装逼",app()['request']));
+            return response()->json(['a']);
+    
+        }
+    }
+    ```  
+    
+    以上就是事件注册和调度的使用【可以使用类】   
     
