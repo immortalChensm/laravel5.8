@@ -1,6 +1,6 @@
-### 队列系统    
-[首页](../readme.md)   
-[什么是队列](https://learnku.com/articles/30430)     
+### **队列系统** 
+ [首页](../readme.md)   
+ [什么是队列](https://learnku.com/articles/30430)     
 
 - 队列任务创建  
     php artisan make:job xxx   
