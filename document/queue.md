@@ -406,6 +406,7 @@
     
     ```   
     Bus服务提供类  
+    
     ```php  
     <?php
     
@@ -1442,7 +1443,7 @@
             }
         }
         
-    3、向队列【默认的syncQueue】推送数据  
+   3、向队列【默认的syncQueue】推送数据  
     Illuminate\Bus\Dispatcher->pushCommandToQueue($queue, $command)
         {
             if (isset($command->queue, $command->delay)) {
@@ -1520,9 +1521,9 @@
            return $this->pipeline->send($command)->through($this->pipes)->then($callback);
        }
 
-    ```  
+   ```  
     
-    Redis流程  
+   Redis流程  
     ```php  
     //进队
      Illuminate\Queue\RedisQueue->push($job, $data = '', $queue = null)
