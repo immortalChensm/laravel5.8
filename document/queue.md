@@ -1376,7 +1376,8 @@
          }
     ```    
     
-    队列流程：  
+    队列流程：    
+    
     ```php  
     1、App\Jobs\Test::dispatch();任务分发
       Illuminate\Foundation\Bus\Dispatchable->dispatch(){
@@ -1524,7 +1525,7 @@
    ```  
     
    Redis流程  
-    ```php  
+   ```php  
     //进队
      Illuminate\Queue\RedisQueue->push($job, $data = '', $queue = null)
         {
@@ -1603,7 +1604,7 @@
          //这里的流程后Sync一样的啦
                  $job->fire();
          }
-    ```  
+   ```  
     
     
    大体流程就是：分发任务时【就是封装任务类进队操作】【可以选择要用什么队列连接器默认是sync，以及队列名称默认是default】  
