@@ -1033,7 +1033,7 @@
           timeoutAt=null
           data = [
             commandName=App\Jobs\Test
-            command=O:13:"App\Jobs\Test":7:{s:6:" * job";N;s:10:"connection";N;s:5:"queue";N;s:15:"chainConnection";N;s:10:"chainQueue";N;s:5:"delay";N;s:7:"chained";a:0:{}}
+            command=O:13:"App\Jobs\Test":7:{s:6:" * job";N;s:10:"connection";N;s:5:"queue";N;s:15:"chainConnection";N;s:10:"chainQueue";N;s:5:"delay";N;s:7:"chained";a:0:{}}
           ]
         ]
         **/
@@ -1614,5 +1614,4 @@
    
    
    
-    
     
