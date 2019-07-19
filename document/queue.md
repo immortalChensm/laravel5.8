@@ -1033,7 +1033,7 @@
           timeoutAt=null
           data = [
             commandName=App\Jobs\Test
-            command=O:13:"App\Jobs\Test":7:{s:6:" * job";N;s:10:"connection";N;s:5:"queue";N;s:15:"chainConnection";N;s:10:"chainQueue";N;s:5:"delay";N;s:7:"chained";a:0:{}}
+            command=O:13:"App\Jobs\Test":7:{s:6:" * job";N;s:10:"connection";N;s:5:"queue";N;s:15:"chainConnection";N;s:10:"chainQueue";N;s:5:"delay";N;s:7:"chained";a:0:{}}
           ]
         ]
         **/
@@ -1046,4 +1046,573 @@
             ($this->instance = $this->resolve($class))->{$method}($this, $payload['data']);
         }
     ```  
+    ![queueJob数据存储实例](images/instances/job1.png)   
+    ```php  
+    $queueJob=[
+        job=null
+        payload={"displayName":"App\\Jobs\\Test","job":"Illuminate\\Queue\\CallQueuedHandler@call","maxTries":null,"delay":null,"timeout":null,"timeoutAt":null,"data":{"commandName":"App\\Jobs\\Test","command":"O:13:\"App\\Jobs\\Test\":7:{s:6:\"\u0000*\u0000job\";N;s:10:\"connection\";N;s:5:\"queue\";N;s:15:\"chainConnection\";N;s:10:\"chainQueue\";N;s:5:\"delay\";N;s:7:\"chained\";a:0:{}}"}}
+        instance=null
+        deleted=false
+        released=false
+        failed=false
+        connectionName=sync
+        queue=null
+    ]
+    ```  
+    ![payload](images/instances/payload.png)  
+    Illuminate\Queue\CallQueuedHandler->call()
+    ```php  
+    public function call(Job $job, array $data)
+        {
+            try {
+              //
+                $command = $this->setJobInstanceIfNecessary(
+                    $job, unserialize($data['command'])
+                );
+            } catch (ModelNotFoundException $e) {
+                return $this->handleModelNotFound($job, $e);
+            }
+    
+            $this->dispatcher->dispatchNow(
+                $command, $this->resolveHandler($job, $command)
+            );
+    
+            if (! $job->hasFailed() && ! $job->isReleased()) {
+                $this->ensureNextJobInChainIsDispatched($command);
+            }
+    
+            if (! $job->isDeletedOrReleased()) {
+                $job->delete();
+            }
+        }
+    ```  
+    $command数据存储如下 
+    ![command](images/instances/command.png)  
+    
+    ```php  
+    public function dispatchNow($command, $handler = null)
+        {
+            if ($handler || $handler = $this->getCommandHandler($command)) {
+                $callback = function ($command) use ($handler) {
+                //运行任务类的handle方法
+                    return $handler->handle($command);
+                };
+            } else {
+            //同样的运行任务类的handle方法
+                $callback = function ($command) {
+                    return $this->container->call([$command, 'handle']);
+                };
+            }
+    
+            return $this->pipeline->send($command)->through($this->pipes)->then($callback);
+        }
+    ```  
+    
+    以上是默认的sync队列  
+
+- redis队列处理  
+    
+    Illuminate\Queue\RedisQueue  
+    ```php  
+    public function push($job, $data = '', $queue = null)
+        {
+            return $this->pushRaw($this->createPayload($job, $this->getQueue($queue), $data), $queue);
+        }
+    
+        /**
+         * Push a raw payload onto the queue.
+         *
+         * @param  string  $payload
+         * @param  string|null  $queue
+         * @param  array   $options
+         * @return mixed
+         */
+        public function pushRaw($payload, $queue = null, array $options = [])
+        {
+            $this->getConnection()->eval(
+                LuaScripts::push(), 2, $this->getQueue($queue),
+                $this->getQueue($queue).':notify', $payload
+            );
+    
+    
+            return json_decode($payload, true)['id'] ?? null;
+        }
         
+     LuaScripts::function push()
+         {
+             return <<<'LUA'
+     -- Push the job onto the queue...
+     redis.call('rpush', KEYS[1], ARGV[1])
+     -- Push a notification onto the "notify" queue...
+     redis.call('rpush', KEYS[2], 1)
+     LUA;
+         }
+    ```  
+    
+    启动队列处理器  php artisan queue:work
+    ```php  
+    public function handle()
+        {
+             //得到默认的队列连接名称【redis,database等】
+            $connection = $this->argument('connection')
+                            ?: $this->laravel['config']['queue.default'];
+    
+            // We need to get the right queue for the connection which is set in the queue
+            // configuration file for the application. We will pull it based on the set
+            // connection being run for the queue operation currently being executed.
+            
+            //获取连接中的队列默认是default【当然如果你在分发任务时指定了队列连接和队列名称的话可以通过输入 参数控制  
+            //队列名称
+            $queue = $this->getQueue($connection);
+    
+            $this->runWorker(
+                $connection, $queue
+            );
+        }
+        
+    protected function runWorker($connection, $queue)
+        {
+        //设置缓存管理器
+            $this->worker->setCache($this->laravel['cache']->driver());
+            //检测用户是否了php artisan queue:work --once
+            return $this->worker->{$this->option('once') ? 'runNextJob' : 'daemon'}(
+                $connection, $queue, $this->gatherWorkerOptions()
+            );
+        }
+    ```  
+    Illuminate\Queue\Worker 队列工作管理器【守护进程方式运行】
+    ```php  
+    public function daemon($connectionName, $queue, WorkerOptions $options)
+        {
+        //进程控制扩展是否支持
+            if ($this->supportsAsyncSignals()) {
+                $this->listenForSignals();
+            }
+    
+            $lastRestart = $this->getTimestampOfLastQueueRestart();
+            //死循环【为了兼容垃圾win】
+            while (true) {
+                
+                if (! $this->daemonShouldRun($options, $connectionName, $queue)) {
+                //退出当前进程【进程创建linux下是fork,win默认运行的当前进程，退出当前进程是exit】
+                    $this->pauseWorker($options, $lastRestart);
+    
+                    continue;
+                }
+                $job = $this->getNextJob(
+                //从队列管理器中取到队列连接器
+                    $this->manager->connection($connectionName), $queue
+                );
+    
+                if ($this->supportsAsyncSignals()) {//非win系统的使用，最好去linux下测试
+                    $this->registerTimeoutHandler($job, $options);
+                }
+    
+                if ($job) {
+                    $this->runJob($job, $connectionName, $options);
+                } else {
+                    $this->sleep($options->sleep);
+                }
+    
+                $this->stopIfNecessary($options, $lastRestart, $job);
+            }
+        }
+        【任务超时异常处理】
+    protected function registerTimeoutHandler($job, WorkerOptions $options)
+            {
+                //定时信号【时间到后触发】
+                pcntl_signal(SIGALRM, function () use ($job, $options) {
+                    $this->markJobAsFailedIfWillExceedMaxAttempts(
+                        $job->getConnectionName(), $job, (int) $options->maxTries, $this->maxAttemptsExceededException($job)
+                    );
+        
+                    $this->kill(1);
+                });
+                //定时
+                pcntl_alarm(
+                    max($this->timeoutForJob($job, $options), 0)
+                );
+            }
+            
+    protected function supportsAsyncSignals()【是否支持进程扩展，win默认不支持，linux可以】
+        {
+            return extension_loaded('pcntl');
+        }
+        
+    protected function listenForSignals()【linux管用】  
+        {
+        //进程信号安装
+            pcntl_async_signals(true);
+            //SIGQUIT 3 C 键盘的退出键被按下 
+            pcntl_signal(SIGTERM, function () {
+                $this->shouldQuit = true;
+            });
+            //SIGUSR1 30,10,16 A 用户自定义信号1 
+            //SIGUSR2 31,12,17 A 用户自定义信号2 
+            pcntl_signal(SIGUSR2, function () {
+                $this->paused = true;
+            });
+            //SIGCONT 19,18,25 进程继续（曾被停止的进程） 
+            pcntl_signal(SIGCONT, function () {
+                $this->paused = false;
+            });
+        }
+        
+    protected function getTimestampOfLastQueueRestart()【从缓存获取队列最后重启时间】
+        {
+            if ($this->cache) {
+                return $this->cache->get('illuminate:queue:restart');
+            }
+        }
+        
+    protected function getNextJob($connection, $queue)【从队列连接器指定队列取出任务】
+        {
+            try {
+                foreach (explode(',', $queue) as $queue) {
+                //从队列连接器取到指定队列的任务
+                    if (! is_null($job = $connection->pop($queue))) {
+                        return $job;
+                    }
+                }
+            } catch (Exception $e) {
+                $this->exceptions->report($e);
+    
+                $this->stopWorkerIfLostConnection($e);
+    
+                $this->sleep(1);
+            } catch (Throwable $e) {
+                $this->exceptions->report($e = new FatalThrowableError($e));
+    
+                $this->stopWorkerIfLostConnection($e);
+    
+                $this->sleep(1);
+            }
+        }
+        
+    protected function runJob($job, $connectionName, WorkerOptions $options)
+        {
+            try {
+                return $this->process($connectionName, $job, $options);
+            } catch (Exception $e) {
+                $this->exceptions->report($e);
+    
+                $this->stopWorkerIfLostConnection($e);
+            } catch (Throwable $e) {
+                $this->exceptions->report($e = new FatalThrowableError($e));
+    
+                $this->stopWorkerIfLostConnection($e);
+            }
+        }
+        
+    public function process($connectionName, $job, WorkerOptions $options)
+        {
+            try {
+                // First we will raise the before job event and determine if the job has already ran
+                // over its maximum attempt limits, which could primarily happen when this job is
+                // continually timing out and not actually throwing any exceptions from itself.
+                $this->raiseBeforeJobEvent($connectionName, $job);
+    
+                $this->markJobAsFailedIfAlreadyExceedsMaxAttempts(
+                    $connectionName, $job, (int) $options->maxTries
+                );
+    
+                // Here we will fire off the job and let it process. We will catch any exceptions so
+                // they can be reported to the developers logs, etc. Once the job is finished the
+                // proper events will be fired to let any listeners know this job has finished.
+                //运行任务方法
+                $job->fire();
+    
+                $this->raiseAfterJobEvent($connectionName, $job);
+            } catch (Exception $e) {
+                $this->handleJobException($connectionName, $job, $options, $e);
+            } catch (Throwable $e) {
+                $this->handleJobException(
+                    $connectionName, $job, $options, new FatalThrowableError($e)
+                );
+            }
+        }
+    ```  
+    Illuminate\Queue\RedisQueue
+    Redis从队列取出任务  
+    ```php  
+    public function pop($queue = null)
+        {
+            $this->migrate($prefixed = $this->getQueue($queue));
+    
+            if (empty($nextJob = $this->retrieveNextJob($prefixed))) {
+                return;
+            }
+    
+            [$job, $reserved] = $nextJob;
+    
+            if ($reserved) {
+                return new RedisJob(
+                    $this->container, $this, $job,
+                    $reserved, $this->connectionName, $queue ?: $this->default
+                );
+            }
+        }
+        
+     protected function retrieveNextJob($queue, $block = true)
+         {
+         //没错运行一下lua脚本取回
+             $nextJob = $this->getConnection()->eval(
+                 LuaScripts::pop(), 3, $queue, $queue.':reserved', $queue.':notify',
+                 $this->availableAt($this->retryAfter)
+             );
+     
+             if (empty($nextJob)) {
+                 return [null, null];
+             }
+     
+             [$job, $reserved] = $nextJob;
+     
+             if (! $job && ! is_null($this->blockFor) && $block &&
+                 $this->getConnection()->blpop([$queue.':notify'], $this->blockFor)) {
+                 return $this->retrieveNextJob($queue, false);
+             }
+     
+             return [$job, $reserved];
+         }
+    ```    
+    
+    队列流程：    
+    
+    ```php  
+    1、App\Jobs\Test::dispatch();任务分发
+      Illuminate\Foundation\Bus\Dispatchable->dispatch(){
+            return new PendingDispatch(new static(...func_get_args()));
+        }  
+    Illuminate\Foundation\Bus\PendingDispatch->__destruct()  
+        {
+            app(Dispatcher::class)->dispatch($this->job);
+        }
+        
+    Illuminate\Bus\Dispatcher->dispatch($command)
+        {
+            if ($this->queueResolver && $this->commandShouldBeQueued($command)) {
+                return $this->dispatchToQueue($command);
+            }
+    
+            return $this->dispatchNow($command);
+        }
+    
+    2、从队列管理器取到配置好的队列连接器【连接后返回sync队列实例】 Illumin ate\Bus\Dispatcher->dispatchToQueue($command)
+    【如果配置是redis就是返回RedisQueue,是数据库就返回DatabaseQueue实例】
+        {
+            //队列连接名称
+            $connection = $command->connection ?? null;
+            /**
+            function ($connection = null) use ($app) {
+                //Illuminate\Queue\QueueManager 
+                //实例化队列管理器默认会取回Sync队列连接器
+                return $app[QueueFactoryContract::class]->connection($connection);
+            }
+            **/
+            //运行匿名函数实例化队列管理器返回
+            $queue = call_user_func($this->queueResolver, $connection);
+            return $this->pushCommandToQueue($queue, $command);
+        } 
+        
+        Illuminate\Queue\QueueManager->connection($name = null)
+            {
+                $name = $name ?: $this->getDefaultDriver();
+                if (! isset($this->connections[$name])) {
+                    $this->connections[$name] = $this->resolve($name);
+                    $this->connections[$name]->setContainer($this->app);
+                }
+        
+                return $this->connections[$name];
+            }
+            
+        Illuminate\Queue\QueueManager->resolve($name)
+            {
+                $config = $this->getConfig($name);
+                //$this->connectors[$driver]) 队列连接器【在队列服务提供类运行时注册进来】
+                return $this->getConnector($config['driver'])
+                                ->connect($config)
+                                ->setConnectionName($name);
+            }
+            
+        假设现在是sync【所以不同的配置会返回不同的队列连接器】
+        class SyncConnector implements ConnectorInterface
+        {
+            public function connect(array $config)
+            {
+            //Illuminate\Queue\SyncQueue
+                return new SyncQueue;
+            }
+        }
+        
+    3、向队列【默认的syncQueue】推送数据  
+    Illuminate\Bus\Dispatcher->pushCommandToQueue($queue, $command)
+        {
+            if (isset($command->queue, $command->delay)) {
+                return $queue->laterOn($command->queue, $command->delay, $command);
+            }
+    
+            if (isset($command->queue)) {
+                return $queue->pushOn($command->queue, $command);
+            }
+    
+            if (isset($command->delay)) {
+                return $queue->later($command->delay, $command);
+            }
+    
+            return $queue->push($command);
+        }  
+        
+    4、Sync队列推送数据  
+    Illuminate\Queue\SyncQueue->push($job, $data = '', $queue = null)
+       {
+       //queueJob 属于Illuminate\Queue\Jobs 类实例
+            //返回实例对象$queueJob=obj[
+                job=null
+                payload={"displayName":"App\\Jobs\\Test","job":"Illuminate\\Queue\\CallQueuedHandler@call","maxTries":null,"delay":null,"timeout":null,"timeoutAt":null,"data":{"commandName":"App\\Jobs\\Test","command":"O:13:\"App\\Jobs\\Test\":7:{s:6:\"\u0000*\u0000job\";N;s:10:\"connection\";N;s:5:\"queue\";N;s:15:\"chainConnection\";N;s:10:\"chainQueue\";N;s:5:\"delay\";N;s:7:\"chained\";a:0:{}}"}}
+                instance=null
+                deleted=false
+                released=false
+                faild=false
+                connectionName=sync
+                queue=null
+            ]
+            /**
+            $this->createPayload($job, $queue, $data) = {"displayName":"App\\Jobs\\Test","job":"Illuminate\\Queue\\CallQueuedHandler@call","maxTries":null,"delay":null,"timeout":null,"timeoutAt":null,"data":{"commandName":"App\\Jobs\\Test","command":"O:13:\"App\\Jobs\\Test\":7:{s:6:\"\u0000*\u0000job\";N;s:10:\"connection\";N;s:5:\"queue\";N;s:15:\"chainConnection\";N;s:10:\"chainQueue\";N;s:5:\"delay\";N;s:7:\"chained\";a:0:{}}"}}
+            **/
+           $queueJob = $this->resolveJob($this->createPayload($job, $queue, $data), $queue);//构建SyncObj任务类返回
+           $queueJob->fire();//执行任务
+           return 0;
+       }
+       
+    Illuminate\Queue\SyncQueue->resolveJob($payload, $queue)
+       {
+           return new SyncJob($this->container, $payload, $this->connectionName, $queue);
+       }
+       
+    5、执行任务  
+    Illuminate\Queue\SyncQueue->fire()
+       {
+           $payload = $this->payload();
+            
+           [$class, $method] = JobName::parse($payload['job']);
+            //Illuminate\\Queue\\CallQueuedHandler@call执行该类的call方法
+           ($this->instance = $this->resolve($class))->{$method}($this, $payload['data']);
+       }
+       
+    Illuminate\\Queue\\CallQueuedHandler@call(Job $job, array $data)
+       {
+          
+           $this->dispatcher->dispatchNow(
+               $command, $this->resolveHandler($job, $command)
+           );
+       }
+    【运行任务类的handle方法】
+    Illuminate\Bus\Dispatcher->dispatchNow($command, $handler = null)
+       {
+           if ($handler || $handler = $this->getCommandHandler($command)) {
+               $callback = function ($command) use ($handler) {
+                   return $handler->handle($command);
+               };
+           } else {
+               $callback = function ($command) {
+                   return $this->container->call([$command, 'handle']);
+               };
+           }
+   
+           return $this->pipeline->send($command)->through($this->pipes)->then($callback);
+       }
+
+    ```  
+    
+   Redis流程  
+   ```php  
+            //进队
+   Illuminate\Queue\RedisQueue->push($job, $data = '', $queue = null)
+        {
+        //任务封装后进队
+            return $this->pushRaw($this->createPayload($job, $this->getQueue($queue), $data), $queue);
+        }
+     
+     Illuminate\Queue\RedisQueue->pushRaw($payload, $queue = null, array $options = [])
+         {
+         //执行lua脚本写入
+             $this->getConnection()->eval(
+                 LuaScripts::push(), 2, $this->getQueue($queue),
+                 $this->getQueue($queue).':notify', $payload
+             );
+     
+     
+             return json_decode($payload, true)['id'] ?? null;
+         }  
+         
+     运行队列守护进程  
+     php artisan queue:work  
+     Illuminate\Queue\Worker->daemon($connectionName, $queue, WorkerOptions $options)
+         {
+          
+          //任务出队
+         $job = $this->getNextJob(
+         //从队列管理器取得队列【这里取回RedisQueue】
+             $this->manager->connection($connectionName), $queue
+         );
+
+         
+         if ($job) {
+         //运行任务实例
+             $this->runJob($job, $connectionName, $options);
+         } else {
+             $this->sleep($options->sleep);
+         }
+     
+             }
+         }
+     任务出队
+     Illuminate\Queue\Worker->getNextJob($connection, $queue)
+         {
+                 foreach (explode(',', $queue) as $queue) {
+                     if (! is_null($job = $connection=RedisQueue->pop($queue))) {
+                         return $job;
+                     }
+                 }
+         }
+         
+     Illuminate\Queue\RedisQueue->pop($queue = null)【任务出队后封装为RedisJob实例返回】
+         {
+             $this->migrate($prefixed = $this->getQueue($queue));
+     
+             if (empty($nextJob = $this->retrieveNextJob($prefixed))) {
+                 return;
+             }
+     
+             [$job, $reserved] = $nextJob;
+     
+             if ($reserved) {
+                 return new RedisJob(
+                     $this->container, $this, $job,
+                     $reserved, $this->connectionName, $queue ?: $this->default
+                 );
+             }
+         }
+         
+     Illuminate\Queue\Worker->runJob($job, $connectionName, WorkerOptions $options)
+         {
+                return $this->process($connectionName, $job, $options);
+         }
+         
+     Illuminate\Queue\Worker->process($connectionName, $job, WorkerOptions $options)
+         {
+         //这里的流程后Sync一样的啦
+                 $job->fire();
+         }
+   ```  
+    
+    
+   大体流程就是：分发任务时【就是封装任务类进队操作】【可以选择要用什么队列连接器默认是sync，以及队列名称默认是default】  
+   开启一个守护进程【弄个死循环】，从队列里取出数据【解析后并封装为对应的任务类】，然后运行任务类即可  
+   
+      
+   
+   
+   
+    
+    
