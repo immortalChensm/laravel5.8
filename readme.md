@@ -19,7 +19,7 @@
 - **[session实现流程](document/db.md)【准备中】**
 - **[Auth实现流程](document/db.md)【准备中】**
 - **[事件实现流程](document/db.md)【准备中】**
-- **[队列实现流程](document/queue.md)【准备中】**
+- **[队列实现流程](document/queue.md)【已完成】**
 - **[console实现流程](document/console.md)【已完成】**
 
 
