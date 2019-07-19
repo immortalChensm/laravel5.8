@@ -658,7 +658,7 @@
     `$queue = call_user_func($this->queueResolver, $connection);`   
     实例化队列管理器 Illuminate\Queue\QueueServiceProvider下的方法 
     ```php  
-     function ($app) {
+    function ($app) {
            //实例化并传递给匿名函数运行【tap函数功能看下helpers.php就知道了】   
             return tap(new QueueManager($app), function ($manager) {
                 $this->registerConnectors($manager);
@@ -1062,7 +1062,7 @@
     ![payload](images/instances/payload.png)  
     Illuminate\Queue\CallQueuedHandler->call()
     ```php  
-     public function call(Job $job, array $data)
+    public function call(Job $job, array $data)
         {
             try {
               //
@@ -1114,7 +1114,7 @@
     
     Illuminate\Queue\RedisQueue  
     ```php  
-     public function push($job, $data = '', $queue = null)
+    public function push($job, $data = '', $queue = null)
         {
             return $this->pushRaw($this->createPayload($job, $this->getQueue($queue), $data), $queue);
         }
@@ -1335,7 +1335,7 @@
     Illuminate\Queue\RedisQueue
     Redis从队列取出任务  
     ```php  
-     public function pop($queue = null)
+    public function pop($queue = null)
         {
             $this->migrate($prefixed = $this->getQueue($queue));
     
@@ -1397,8 +1397,8 @@
             return $this->dispatchNow($command);
         }
     
-   2、从队列管理器取到配置好的队列连接器【连接后返回sync队列实例】 Illumin ate\Bus\Dispatcher->dispatchToQueue($command)
-   【如果配置是redis就是返回RedisQueue,是数据库就返回DatabaseQueue实例】
+    2、从队列管理器取到配置好的队列连接器【连接后返回sync队列实例】 Illumin ate\Bus\Dispatcher->dispatchToQueue($command)
+    【如果配置是redis就是返回RedisQueue,是数据库就返回DatabaseQueue实例】
         {
             //队列连接名称
             $connection = $command->connection ?? null;
@@ -1444,7 +1444,7 @@
             }
         }
         
-   3、向队列【默认的syncQueue】推送数据  
+    3、向队列【默认的syncQueue】推送数据  
     Illuminate\Bus\Dispatcher->pushCommandToQueue($queue, $command)
         {
             if (isset($command->queue, $command->delay)) {
@@ -1462,8 +1462,8 @@
             return $queue->push($command);
         }  
         
-   4、Sync队列推送数据  
-   Illuminate\Queue\SyncQueue->push($job, $data = '', $queue = null)
+    4、Sync队列推送数据  
+    Illuminate\Queue\SyncQueue->push($job, $data = '', $queue = null)
        {
        //queueJob 属于Illuminate\Queue\Jobs 类实例
             //返回实例对象$queueJob=obj[
@@ -1484,13 +1484,13 @@
            return 0;
        }
        
-   Illuminate\Queue\SyncQueue->resolveJob($payload, $queue)
+    Illuminate\Queue\SyncQueue->resolveJob($payload, $queue)
        {
            return new SyncJob($this->container, $payload, $this->connectionName, $queue);
        }
        
-   5、执行任务  
-   Illuminate\Queue\SyncQueue->fire()
+    5、执行任务  
+    Illuminate\Queue\SyncQueue->fire()
        {
            $payload = $this->payload();
             
@@ -1499,15 +1499,15 @@
            ($this->instance = $this->resolve($class))->{$method}($this, $payload['data']);
        }
        
-   Illuminate\\Queue\\CallQueuedHandler@call(Job $job, array $data)
+    Illuminate\\Queue\\CallQueuedHandler@call(Job $job, array $data)
        {
           
            $this->dispatcher->dispatchNow(
                $command, $this->resolveHandler($job, $command)
            );
        }
-   【运行任务类的handle方法】
-   Illuminate\Bus\Dispatcher->dispatchNow($command, $handler = null)
+    【运行任务类的handle方法】
+    Illuminate\Bus\Dispatcher->dispatchNow($command, $handler = null)
        {
            if ($handler || $handler = $this->getCommandHandler($command)) {
                $callback = function ($command) use ($handler) {
@@ -1522,12 +1522,12 @@
            return $this->pipeline->send($command)->through($this->pipes)->then($callback);
        }
 
-   ```  
+    ```  
     
    Redis流程  
    ```php  
-    //进队
-     Illuminate\Queue\RedisQueue->push($job, $data = '', $queue = null)
+            //进队
+   Illuminate\Queue\RedisQueue->push($job, $data = '', $queue = null)
         {
         //任务封装后进队
             return $this->pushRaw($this->createPayload($job, $this->getQueue($queue), $data), $queue);
