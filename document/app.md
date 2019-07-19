@@ -72,6 +72,45 @@ resolvingCallbacks = [
 
 
 bindings=[
+//队列
+    'queue'=>'function ($app) {
+                         //Illuminate\Queue
+                          return tap(new QueueManager($app), function ($manager) {
+                              $this->registerConnectors($manager);
+                          });
+                      }',
+                      
+    'queue.connection'=>'function ($app) {
+                                     return $app['queue']->connection();
+                                 }',
+                                 
+    'queue.worker'=>'function () {
+                                //Illuminate\Queue\Worker
+                                 return new Worker(
+                                     $this->app['queue'], $this->app['events'], $this->app[ExceptionHandler::class]
+                                 );
+                             }',
+                             
+    'queue.listener'=>'function () {
+                                    //Illuminate\Queue\Worker
+                                   return new Listener($this->app->basePath());
+                               }',
+                               
+    'queue.failer'=>'function () {
+                                 $config = $this->app['config']['queue.failed'];
+                     
+                                 return isset($config['table'])
+                                             ? $this->databaseFailedJobProvider($config)
+                                             : new NullFailedJobProvider;
+                             }',
+                             
+    'Illuminate\Contracts\Bus\Dispatcher'=>'function ($app) {
+    //Illuminate\Bus\Dispatcher
+                                                        return new Dispatcher($app, function ($connection = null) use ($app) {
+                                                            return $app[QueueFactoryContract::class]->connection($connection);
+                                                        });
+                                                    }',
+                           
     'events'=>'function ($app) {
                            return (new Dispatcher($app))->setQueueResolver(function () use ($app) {
                                return $app->make(QueueFactoryContract::class);

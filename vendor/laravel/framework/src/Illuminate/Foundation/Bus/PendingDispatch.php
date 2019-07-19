@@ -109,6 +109,7 @@ class PendingDispatch
      */
     public function __destruct()
     {
+        echo "1";
         app(Dispatcher::class)->dispatch($this->job);
     }
 }

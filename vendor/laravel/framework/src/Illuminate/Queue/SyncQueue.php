@@ -35,7 +35,9 @@ class SyncQueue extends Queue implements QueueContract
     public function push($job, $data = '', $queue = null)
     {
         $queueJob = $this->resolveJob($this->createPayload($job, $queue, $data), $queue);
-
+        $b = $this->createPayload($job, $queue, $data);
+        $a = 1;
+        $c = $b;
         try {
             $this->raiseBeforeJobEvent($queueJob);
 
@@ -60,6 +62,7 @@ class SyncQueue extends Queue implements QueueContract
      */
     protected function resolveJob($payload, $queue)
     {
+
         return new SyncJob($this->container, $payload, $this->connectionName, $queue);
     }
 

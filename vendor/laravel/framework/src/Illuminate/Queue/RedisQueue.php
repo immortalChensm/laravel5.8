@@ -106,6 +106,7 @@ class RedisQueue extends Queue implements QueueContract
             $this->getQueue($queue).':notify', $payload
         );
 
+
         return json_decode($payload, true)['id'] ?? null;
     }
 

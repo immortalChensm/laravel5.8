@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\validateTestPost;
 use App\Http\Controllers\Controller;
+use App\Jobs\Test;
 use Illuminate\Cache\FileStore;
 use Illuminate\Cache\RedisStore;
 use Illuminate\Cache\Repository;
@@ -51,15 +52,16 @@ class TestController extends Controller
         //Cache::put("car","boma");
         //echo Cache::get("car");
         /** @var RedisManager $redisManager */
-        $redisManager = app("redis");
-        $redis = new RedisStore($redisManager,"cache","cache");
-        echo $redis->put("car","aodi",50);
-        //echo $redis->get("car");
+//        $redisManager = app("redis");
+//        $redis = new RedisStore($redisManager,"cache","cache");
+//        echo $redis->put("car","aodi",50);
+//        //echo $redis->get("car");
+//
+//        //$redisClient = $redisManager->connections("cache");
+//        echo $redisManager->get("cache.car");
 
-        //$redisClient = $redisManager->connections("cache");
-        echo $redisManager->get("cache.car");
-
-
+        Test::dispatch();
+        //Test::dispatchNow();
 
         return response()->json(['a']);
 
