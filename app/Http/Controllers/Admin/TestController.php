@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Requests\Admin\validateTestPost;
 use App\Http\Controllers\Controller;
 use App\Jobs\Test;
+use App\User;
 use Illuminate\Cache\FileStore;
 use Illuminate\Cache\RedisStore;
 use Illuminate\Cache\Repository;
@@ -60,8 +61,11 @@ class TestController extends Controller
 //        //$redisClient = $redisManager->connections("cache");
 //        echo $redisManager->get("cache.car");
 
-        Test::dispatch();
+        //Test::dispatch();
         //Test::dispatchNow();
+        $user = new User();
+        $user->name = "jacl";
+        $user->save();
 
         return response()->json(['a']);
 

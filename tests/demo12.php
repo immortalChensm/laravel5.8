@@ -78,11 +78,20 @@ function forget(&$array, $keys)
 //$diff=$d2->diff($d1);
 //print_r( $diff ) ;
 //echo $diff instanceof DateInterval;
-$date = new DateTime('2000-01-01');
-$date->add(new DateInterval('P11Y'));
-echo $date->format('Y-m-d') . "\n";
+//$date = new DateTime('2000-01-01');
+//$date->add(new DateInterval('P11Y'));
+//echo $date->format('Y-m-d') . "\n";
+//
+//
+////echo \Illuminate\Support\Carbon::now()->add(new DateInterval('P11Y'));
+//
+//print_r(array_slice(str_split($hash = sha1("age"), 2), 0, 2));
 
+$event = new DateTime();
+[$payload, $event] = [[$event], get_class($event)];
+print_r($payload);
+print_r($event);
 
-//echo \Illuminate\Support\Carbon::now()->add(new DateInterval('P11Y'));
-
-print_r(array_slice(str_split($hash = sha1("age"), 2), 0, 2));
+[$event, $payload] = [$payload, $event];
+print_r($event);
+print_r($payload);
