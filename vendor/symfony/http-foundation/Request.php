@@ -253,6 +253,7 @@ class Request
         $this->request = new ParameterBag($request);
         $this->query = new ParameterBag($query);
         $this->attributes = new ParameterBag($attributes);
+        //print_r($cookies);
         $this->cookies = new ParameterBag($cookies);
         $this->files = new FileBag($files);
         $this->server = new ServerBag($server);

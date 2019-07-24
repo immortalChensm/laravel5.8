@@ -12,6 +12,10 @@ use Illuminate\Cache\Repository;
 use Illuminate\Contracts\Validation\Factory;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Redis\RedisManager;
+use Illuminate\Session\FileSessionHandler;
+use Illuminate\Session\SessionManager;
+use Illuminate\Session\Store;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\MessageBag;
 
@@ -63,13 +67,28 @@ class TestController extends Controller
 
         //Test::dispatch();
         //Test::dispatchNow();
-        $user = new User();
-        $user->name = "jacl";
-        $user->save();
+        //$user = new User();
+        //$user->name = "jacl";
+        //$user->save();
 
-        print_r(app('events')->dispatch("装逼",request()));
+        //print_r(app('events')->dispatch("装逼",request()));
+        /**
+         * @var SessionManager $session
+         */
+        $session = app('session');
 
-        return response()->json(['a']);
+        /**
+         * @var Store $fileSessionHandler
+         */
+        $fileSessionHandler = $session->driver("file");
+
+        $fileSessionHandler->put("nibi","nibi");
+        echo $fileSessionHandler->get("nibi");
+
+        //return response()->json(['a']);
+        //return ['aaa'];
+        $data = Collection::make(['aaa']);
+        return view("admin.index", compact('data'));
 
     }
 }

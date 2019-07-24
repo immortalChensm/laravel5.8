@@ -560,6 +560,7 @@ class Store implements Session
     public function setId($id)
     {
         $this->id = $this->isValidId($id) ? $id : $this->generateSessionId();
+        $a = $this->id;
     }
 
     /**

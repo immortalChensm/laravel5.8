@@ -91,6 +91,10 @@ class StartSession
     public function getSession(Request $request)
     {
         return tap($this->manager->driver(), function ($session) use ($request) {
+
+            $a = $request->cookies;
+           
+            $b = $session->getName();
             $session->setId($request->cookies->get($session->getName()));
         });
     }
