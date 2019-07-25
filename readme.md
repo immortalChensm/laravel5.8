@@ -19,7 +19,7 @@ laravel framework core source code reading
 - **[模板引擎实现流程---View](document/view.md)【已完成】**
 - **[验证实现流程---Validate](document/validate.md)【已完成】**
 - **[缓存实现流程---cache](document/cache.md)【已完成】**
-- **[session实现流程](document/session.md)【准备中】**
+- **[session实现流程](document/session.md)【...】**
 - **[Auth实现流程](document/db.md)【准备中】**
 - **[队列实现流程](document/queue.md)【已完成】**
 - **[console实现流程](document/console.md)【已完成】**
