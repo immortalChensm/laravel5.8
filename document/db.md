@@ -1388,6 +1388,7 @@
             static::bootTraits();
         }
     //现在它真没有吊用【完全是在装逼】
+    // 也不是完全没有屌用啦，软删除是通过这个机制实现的。 --slpi1
     protected static function bootTraits()
         {
             $class = static::class;
